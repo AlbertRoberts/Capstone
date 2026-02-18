@@ -1,7 +1,8 @@
 from fastapi import FastAPI
+from app.api.routes import router
+from app.db.database import engine, Base
 
-app = FastAPI(title="Little ReaLLM Backend")
+Base.metadata.create_all(bind=engine)
 
-@app.get("/")
-def health_check():
-    return {"status": "ok"}
+app = FastAPI()
+app.include_router(router)
