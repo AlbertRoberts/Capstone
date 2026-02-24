@@ -62,97 +62,97 @@ export default class townscene extends Phaser.Scene {
 		rectangle_5.isFilled = true;
 		rectangle_5.fillColor = 9408399;
 
-		// rectangle_7
-		const rectangle_7 = this.add.rectangle(317, 363, 128, 128);
-		rectangle_7.scaleY = 2.466942142176058;
-		rectangle_7.isFilled = true;
-		rectangle_7.fillColor = 4662308;
+		// School
+		const school = this.add.rectangle(317, 363, 128, 128);
+		school.scaleY = 2.466942142176058;
+		school.isFilled = true;
+		school.fillColor = 4662308;
 
-		// rectangle_8
-		const rectangle_8 = this.add.rectangle(305, 66, 128, 128);
-		rectangle_8.isFilled = true;
-		rectangle_8.fillColor = 4662308;
+		// House 4
+		const house_4 = this.add.rectangle(305, 66, 128, 128);
+		house_4.isFilled = true;
+		house_4.fillColor = 4662308;
 
-		// rectangle_9
-		const rectangle_9 = this.add.rectangle(481, 66, 128, 128);
-		rectangle_9.isFilled = true;
-		rectangle_9.fillColor = 4662308;
+		// House 5
+		const house_5 = this.add.rectangle(481, 66, 128, 128);
+		house_5.isFilled = true;
+		house_5.fillColor = 4662308;
 
-		// rectangle_10
-		const rectangle_10 = this.add.rectangle(668, 66, 128, 128);
-		rectangle_10.isFilled = true;
-		rectangle_10.fillColor = 4662308;
+		// House 6
+		const house_6 = this.add.rectangle(668, 66, 128, 128);
+		house_6.isFilled = true;
+		house_6.fillColor = 4662308;
 
-		// rectangle_11
-		const rectangle_11 = this.add.rectangle(852, 66, 128, 128);
-		rectangle_11.isFilled = true;
-		rectangle_11.fillColor = 4662308;
+		// House 7
+		const house_7 = this.add.rectangle(852, 66, 128, 128);
+		house_7.isFilled = true;
+		house_7.fillColor = 4662308;
 
-		// rectangle_12
-		const rectangle_12 = this.add.rectangle(1019, 66, 128, 128);
-		rectangle_12.isFilled = true;
-		rectangle_12.fillColor = 4662308;
+		// House 8
+		const house_8 = this.add.rectangle(1019, 66, 128, 128);
+		house_8.isFilled = true;
+		house_8.fillColor = 4662308;
 
-		// rectangle_13
-		const rectangle_13 = this.add.rectangle(1209, 224, 128, 128);
-		rectangle_13.isFilled = true;
-		rectangle_13.fillColor = 4662308;
+		// House 9
+		const house_9 = this.add.rectangle(1209, 224, 128, 128);
+		house_9.isFilled = true;
+		house_9.fillColor = 4662308;
 
-		// rectangle_14
-		const rectangle_14 = this.add.rectangle(1212, 372, 128, 128);
-		rectangle_14.isFilled = true;
-		rectangle_14.fillColor = 4662308;
+		// House 10
+		const house_10 = this.add.rectangle(1212, 372, 128, 128);
+		house_10.isFilled = true;
+		house_10.fillColor = 4662308;
 
 		// rectangle_15
 		const rectangle_15 = this.add.rectangle(1209, 527, 128, 128);
 		rectangle_15.isFilled = true;
 		rectangle_15.fillColor = 4662308;
 
-		// rectangle_16
-		const rectangle_16 = this.add.rectangle(85, 545, 128, 128);
-		rectangle_16.isFilled = true;
-		rectangle_16.fillColor = 4662308;
+		// House 1
+		const house_1 = this.add.rectangle(85, 545, 128, 128);
+		house_1.isFilled = true;
+		house_1.fillColor = 4662308;
 
-		// rectangle_17
-		const rectangle_17 = this.add.rectangle(82, 378, 128, 128);
-		rectangle_17.isFilled = true;
-		rectangle_17.fillColor = 4662308;
+		// House 2
+		const house_2 = this.add.rectangle(82, 378, 128, 128);
+		house_2.isFilled = true;
+		house_2.fillColor = 4662308;
 
-		// rectangle_18
-		const rectangle_18 = this.add.rectangle(79, 218, 128, 128);
-		rectangle_18.isFilled = true;
-		rectangle_18.fillColor = 4662308;
+		// House 3
+		const house_3 = this.add.rectangle(79, 218, 128, 128);
+		house_3.isFilled = true;
+		house_3.fillColor = 4662308;
 
-		// rectangle_19
-		const rectangle_19 = this.add.rectangle(977, 450, 128, 128);
-		rectangle_19.isFilled = true;
-		rectangle_19.fillColor = 4662308;
+		// Cafe
+		const cafe = this.add.rectangle(977, 450, 128, 128);
+		cafe.isFilled = true;
+		cafe.fillColor = 4662308;
 
-		// rectangle_20
-		const rectangle_20 = this.add.rectangle(977, 268, 128, 128);
-		rectangle_20.isFilled = true;
-		rectangle_20.fillColor = 4662308;
+		// Clinic
+		const clinic = this.add.rectangle(977, 268, 128, 128);
+		clinic.isFilled = true;
+		clinic.fillColor = 4662308;
 
-		// TOwn_hall
-		const tOwn_hall = this.add.rectangle(647, 369, 128, 128);
-		tOwn_hall.scaleX = 2.001800422483393;
-		tOwn_hall.scaleY = 1.1617588487187138;
-		tOwn_hall.isFilled = true;
-		tOwn_hall.fillColor = 4662308;
+		// Town Hall
+		const town_Hall = this.add.rectangle(647, 369, 128, 128);
+		town_Hall.scaleX = 2.001800422483393;
+		town_Hall.scaleY = 1.1617588487187138;
+		town_Hall.isFilled = true;
+		town_Hall.fillColor = 4662308;
 
-		// rectangle_22
-		const rectangle_22 = this.add.rectangle(799, 646, 128, 128);
-		rectangle_22.scaleX = 1.4865908809477275;
-		rectangle_22.scaleY = 0.8796780398859774;
-		rectangle_22.isFilled = true;
-		rectangle_22.fillColor = 4662308;
+		// Market
+		const market = this.add.rectangle(799, 646, 128, 128);
+		market.scaleX = 1.4865908809477275;
+		market.scaleY = 0.8796780398859774;
+		market.isFilled = true;
+		market.fillColor = 4662308;
 
-		// rectangle_23
-		const rectangle_23 = this.add.rectangle(389, 643, 128, 128);
-		rectangle_23.scaleX = 2.777556167090955;
-		rectangle_23.scaleY = 0.696841503238748;
-		rectangle_23.isFilled = true;
-		rectangle_23.fillColor = 4662308;
+		// Tavern
+		const tavern = this.add.rectangle(389, 643, 128, 128);
+		tavern.scaleX = 2.777556167090955;
+		tavern.scaleY = 0.696841503238748;
+		tavern.isFilled = true;
+		tavern.fillColor = 4662308;
 
 		// rectangle_24
 		const rectangle_24 = this.add.rectangle(466, 364, 128, 128);
@@ -170,12 +170,12 @@ export default class townscene extends Phaser.Scene {
 		rectangle_25.isFilled = true;
 		rectangle_25.fillColor = 9408399;
 
-		// rectangle_6
-		const rectangle_6 = this.add.rectangle(1102, 652, 128, 128);
-		rectangle_6.scaleX = 2.288062440058767;
-		rectangle_6.scaleY = 0.416422309655215;
-		rectangle_6.isFilled = true;
-		rectangle_6.fillColor = 9489506;
+		// Park
+		const park = this.add.rectangle(1102, 652, 128, 128);
+		park.scaleX = 2.288062440058767;
+		park.scaleY = 0.416422309655215;
+		park.isFilled = true;
+		park.fillColor = 9489506;
 
 		// text_1
 		const text_1 = this.add.text(611, 345, "", {});

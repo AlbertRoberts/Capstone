@@ -95,7 +95,7 @@
         {
             "type": "Rectangle",
             "id": "58cadf91-e76f-4565-85b7-04c3c914d263",
-            "label": "rectangle_7",
+            "label": "School",
             "x": 317,
             "y": 363,
             "scaleY": 2.466942142176058,
@@ -107,7 +107,7 @@
         {
             "type": "Rectangle",
             "id": "4ab8a69a-656e-44d3-a9c4-0752e5f10731",
-            "label": "rectangle_8",
+            "label": "House 4",
             "x": 305,
             "y": 66,
             "isFilled": true,
@@ -118,7 +118,7 @@
         {
             "type": "Rectangle",
             "id": "a3a0c593-98e4-478c-bd61-18a99b43d532",
-            "label": "rectangle_9",
+            "label": "House 5",
             "x": 481,
             "y": 66,
             "isFilled": true,
@@ -129,7 +129,7 @@
         {
             "type": "Rectangle",
             "id": "2ada034a-bd48-41f8-9034-4fd101c94f48",
-            "label": "rectangle_10",
+            "label": "House 6",
             "x": 668,
             "y": 66,
             "isFilled": true,
@@ -140,7 +140,7 @@
         {
             "type": "Rectangle",
             "id": "c14fd057-fe5e-48af-94ef-9ea73885011f",
-            "label": "rectangle_11",
+            "label": "House 7",
             "x": 852,
             "y": 66,
             "isFilled": true,
@@ -151,7 +151,7 @@
         {
             "type": "Rectangle",
             "id": "e659fd4a-faba-4a76-ba9c-156f2fce7053",
-            "label": "rectangle_12",
+            "label": "House 8",
             "x": 1019,
             "y": 66,
             "isFilled": true,
@@ -162,7 +162,7 @@
         {
             "type": "Rectangle",
             "id": "25ca7728-0c8d-49b6-bb0b-ccefd54b386e",
-            "label": "rectangle_13",
+            "label": "House 9",
             "x": 1209,
             "y": 224,
             "isFilled": true,
@@ -173,7 +173,7 @@
         {
             "type": "Rectangle",
             "id": "d65919ef-3d40-4d89-99a0-b19c706f3769",
-            "label": "rectangle_14",
+            "label": "House 10",
             "x": 1212,
             "y": 372,
             "isFilled": true,
@@ -195,7 +195,7 @@
         {
             "type": "Rectangle",
             "id": "ae269a12-1f4d-40ea-8ee5-126e8149c6f0",
-            "label": "rectangle_16",
+            "label": "House 1",
             "x": 85,
             "y": 545,
             "isFilled": true,
@@ -206,7 +206,7 @@
         {
             "type": "Rectangle",
             "id": "ea18801f-6dd1-407a-8bdc-5db55e8e73a3",
-            "label": "rectangle_17",
+            "label": "House 2",
             "x": 82,
             "y": 378,
             "isFilled": true,
@@ -217,7 +217,7 @@
         {
             "type": "Rectangle",
             "id": "e58de663-7e9a-4800-8060-717d7d16fe78",
-            "label": "rectangle_18",
+            "label": "House 3",
             "x": 79,
             "y": 218,
             "isFilled": true,
@@ -228,7 +228,7 @@
         {
             "type": "Rectangle",
             "id": "a0677294-6cca-4de9-a5b7-3011442facec",
-            "label": "rectangle_19",
+            "label": "Cafe",
             "x": 977,
             "y": 450,
             "isFilled": true,
@@ -239,7 +239,7 @@
         {
             "type": "Rectangle",
             "id": "0c6a3687-154e-4044-a9f8-74e70a82b7c5",
-            "label": "rectangle_20",
+            "label": "Clinic",
             "x": 977,
             "y": 268,
             "isFilled": true,
@@ -250,7 +250,7 @@
         {
             "type": "Rectangle",
             "id": "af039fa3-c5ab-4c0b-b22d-f3b69be31f23",
-            "label": "TOwn_hall",
+            "label": "Town Hall",
             "x": 647,
             "y": 369,
             "scaleX": 2.001800422483393,
@@ -263,7 +263,7 @@
         {
             "type": "Rectangle",
             "id": "85bbd25f-56eb-4b2d-b38c-ab400c6047c5",
-            "label": "rectangle_22",
+            "label": "Market",
             "x": 799,
             "y": 646,
             "scaleX": 1.4865908809477275,
@@ -276,7 +276,7 @@
         {
             "type": "Rectangle",
             "id": "c56d5e5b-0bfe-42fc-bfe4-496d9ba4e67d",
-            "label": "rectangle_23",
+            "label": "Tavern",
             "x": 389,
             "y": 643,
             "scaleX": 2.777556167090955,
@@ -317,7 +317,7 @@
         {
             "type": "Rectangle",
             "id": "6d88c08e-dc1d-4e30-9f88-78ab3ae76733",
-            "label": "rectangle_6",
+            "label": "Park",
             "x": 1102,
             "y": 652,
             "scaleX": 2.288062440058767,
