@@ -6,13 +6,29 @@
 /* START-USER-IMPORTS */
 /* END-USER-IMPORTS */
 
+	// anchor points for the locations in the town, used for navigation and interaction
+
+	type LocationId = "town_hall" | "school" | "clinic" | "cafe" | "tavern" | "market" | "park";
+
+	const LOCATIONS: Record<LocationId, { x: number; y: number }> = {
+	town_hall: { x: 647, y: 369 },
+	school: { x: 317, y: 363 },
+	clinic: { x: 977, y: 268 },
+	cafe: { x: 977, y: 450 },
+	tavern: { x: 389, y: 643 },
+	market: { x: 799, y: 646 },
+	park: { x: 1102, y: 652 },
+	};
+	
 export default class townscene extends Phaser.Scene {
 
 	constructor() {
 		super("townscene");
 
 		/* START-USER-CTR-CODE */
-		// Write your code here.
+
+		
+
 		/* END-USER-CTR-CODE */
 	}
 
@@ -217,11 +233,21 @@ export default class townscene extends Phaser.Scene {
 
 	/* START-USER-CODE */
 
-	// Write your code here
+
+
+	// helper function to draw point at anchor locations
+	private drawAnchors() {
+		for (const [id, pos] of Object.entries(LOCATIONS)) {
+		  const dot = this.add.circle(pos.x, pos.y, 6, 0xffcc00).setDepth(1000);
+		  this.add.text(pos.x + 8, pos.y - 10, id, { color: "#ffffff", fontSize: "12px" }).setDepth(1000);
+		  dot.setAlpha(0.6);
+		}
+	  }
 
 	create() {
 
 		this.editorCreate();
+		this.drawAnchors();
 	}
 
 	/* END-USER-CODE */
