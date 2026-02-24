@@ -19,7 +19,7 @@
 	market: { x: 799, y: 646 },
 	park: { x: 1102, y: 652 },
 	};
-	
+
 export default class townscene extends Phaser.Scene {
 
 	constructor() {
@@ -233,6 +233,28 @@ export default class townscene extends Phaser.Scene {
 
 	/* START-USER-CODE */
 
+	//simple agent object
+	private agents = new Map<string, { body: Phaser.GameObjects.Arc; label: Phaser.GameObjects.Text }>();
+
+	// helper function to spawn an agent at a location
+	private spawnAgent(id: string, name: string, x: number, y: number) {
+	const body = this.add.circle(x, y, 10, 0x4ade80).setDepth(900);
+	const label = this.add.text(x + 12, y - 10, name, { color: "#ffffff", fontSize: "14px" }).setDepth(900);
+	this.agents.set(id, { body, label });
+	}
+
+	// helper function to move an agent to a new location with tweening
+	private moveAgentTo(id: string, x: number, y: number) {
+	const a = this.agents.get(id);
+	if (!a) return;
+
+	this.tweens.killTweensOf(a.body);
+	this.tweens.killTweensOf(a.label);
+
+	this.tweens.add({ targets: a.body, x, y, duration: 700, ease: "Sine.easeInOut" });
+	this.tweens.add({ targets: a.label, x: x + 12, y: y - 10, duration: 700, ease: "Sine.easeInOut" });
+	}
+
 
 
 	// helper function to draw point at anchor locations
@@ -248,6 +270,25 @@ export default class townscene extends Phaser.Scene {
 
 		this.editorCreate();
 		this.drawAnchors();
+
+		// fake agents for testing
+		this.spawnAgent("a1", "Elara", LOCATIONS.town_hall.x - 40, LOCATIONS.town_hall.y);
+		this.spawnAgent("a2", "Marcus", LOCATIONS.school.x, LOCATIONS.school.y + 40);
+		this.spawnAgent("a3", "Ivy", LOCATIONS.cafe.x, LOCATIONS.cafe.y - 40);
+	  
+		// sends an agent to a random location every two seconds
+		const ids: LocationId[] = Object.keys(LOCATIONS) as LocationId[];
+		this.time.addEvent({
+		  delay: 2000,
+		  loop: true,
+		  callback: () => {
+			for (const [agentId] of this.agents) {
+			  const dest = Phaser.Utils.Array.GetRandom(ids);
+			  const { x, y } = LOCATIONS[dest];
+			  this.moveAgentTo(agentId, x, y);
+			}
+		  },
+		});
 	}
 
 	/* END-USER-CODE */
