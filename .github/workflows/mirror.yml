@@ -18,4 +18,4 @@ jobs:
       - name: Push to GitLab
         run: |
           git remote add gitlab https://oauth2:${{ secrets.GITLAB_TOKEN }}@student-gitlab.sec.cnu.edu/albert.roberts.22-cpsc498-s26/capstone_project.git
-          git push --mirror gitlab
+          git push gitlab main
