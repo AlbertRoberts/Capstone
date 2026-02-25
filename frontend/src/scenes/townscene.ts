@@ -5,6 +5,8 @@
 
 type LocationId = "town_hall" | "school" | "clinic" | "cafe" | "tavern" | "market" | "park";
 
+type Pt = { x: number; y: number };
+
 const LOCATIONS: Record<LocationId, { x: number; y: number }> = {
 town_hall: { x: 647, y: 369 },
 school: { x: 317, y: 363 },
@@ -220,17 +222,17 @@ export default class townscene extends Phaser.Scene {
 
 	/* START-USER-CODE */
 
-	//simple agent object
+	// simple agent object
 	private agents = new Map<string, { body: Phaser.GameObjects.Arc; label: Phaser.GameObjects.Text }>();
 
-	// helper function to spawn an agent at a location
+	
 	private spawnAgent(id: string, name: string, x: number, y: number) {
 	const body = this.add.circle(x, y, 10, 0x4ade80).setDepth(900);
 	const label = this.add.text(x + 12, y - 10, name, { color: "#ffffff", fontSize: "14px" }).setDepth(900);
 	this.agents.set(id, { body, label });
 	}
 
-	// helper function to move an agent to a new location with tweening
+	// (optional) direct move
 	private moveAgentTo(id: string, x: number, y: number) {
 	const a = this.agents.get(id);
 	if (!a) return;
@@ -242,131 +244,50 @@ export default class townscene extends Phaser.Scene {
 	this.tweens.add({ targets: a.label, x: x + 12, y: y - 10, duration: 700, ease: "Sine.easeInOut" });
 	}
 
-
-
-
 	// helper function to draw point at anchor locations
 	private drawAnchors() {
-		for (const [id, pos] of Object.entries(LOCATIONS)) {
-		  const dot = this.add.circle(pos.x, pos.y, 6, 0xffcc00).setDepth(1000);
-		  this.add.text(pos.x + 8, pos.y - 10, id, { color: "#ffffff", fontSize: "12px" }).setDepth(1000);
-		  dot.setAlpha(0.6);
-		}
-
-		for (const [id, pos] of Object.entries(SIDEWALK_POINTS)) {
-			const dot = this.add.circle(pos.x, pos.y, 6, 0xffcc00).setDepth(1000);
-			this.add.text(pos.x + 8, pos.y - 10, id, { color: "#ffffff", fontSize: "12px" }).setDepth(1000);
-			dot.setAlpha(0.6);
-		  }
-	  }
-
-	  private neighbors(of: {x:number; y:number}) {
-		const MAX_STEP = 260;  // adjust if needed
-		const EPS = 8;         // alignment tolerance
-		return SIDEWALK_POINTS.filter(p => {
-		  if (p === of) return false;
-		  const sameX = Math.abs(p.x - of.x) < EPS;
-		  const sameY = Math.abs(p.y - of.y) < EPS;
-		  if (!(sameX || sameY)) return false;
-		  const d = Phaser.Math.Distance.Between(p.x, p.y, of.x, of.y);
-		  return d <= MAX_STEP;
-		});
-	  }
-
-	// helper function to determine path from current location to destination using sidewalk points
-	private moveAgentAlongPath(id: string, destX: number, destY: number) {
-		const a = this.agents.get(id);
-		if (!a) return;
-
-		// find the closest sidewalk point to the agent's current position
-		const startPoint = SIDEWALK_POINTS.reduce((closest, point) => {
-		  const dist = Phaser.Math.Distance.Between(a.body.x, a.body.y, point.x, point.y);
-		  return dist < closest.dist ? { point, dist } : closest;
-		}, { point: SIDEWALK_POINTS[0], dist: Infinity }).point;
-
-		// find the closest sidewalk point to the destination
-		const endPoint = SIDEWALK_POINTS.reduce((closest, point) => {
-		  const dist = Phaser.Math.Distance.Between(destX, destY, point.x, point.y);
-		  return dist < closest.dist ? { point, dist } : closest;
-		}, { point: SIDEWALK_POINTS[0], dist: Infinity }).point;
-
-		// create a path from start to end using the sidewalk points
-		const path = [startPoint];
-		let currentPoint = startPoint;
-
-		while (currentPoint !== endPoint) {
-			const nbrs = this.neighbors(currentPoint);
-			const nextPoint = nbrs.reduce((best, p) => {
-			  const d = Phaser.Math.Distance.Between(p.x, p.y, endPoint.x, endPoint.y);
-			  return d < best.dist ? { point: p, dist: d } : best;
-			}, { point: null as any, dist: Infinity }).point;
-		  
-			if (!nextPoint) break;
-			path.push(nextPoint);
-			currentPoint = nextPoint;
-		}
-
-		path.push({ x: destX, y: destY }); // add final destination to path
-
-		// tween along the path points sequentially
-		let tweenIndex = 0;
-
-		const tweenNext = () => {
-		tweenIndex += 1; // ✅ move to next segment
-
-		if (tweenIndex >= path.length) return;
-
-		const to = path[tweenIndex];
-
-		this.tweens.add({
-			targets: a.body,
-			x: to.x,
-			y: to.y,
-			duration: 450,
-			ease: "Sine.easeInOut",
-			onComplete: tweenNext,
-		});
-
-		this.tweens.add({
-			targets: a.label,
-			x: to.x + 12,
-			y: to.y - 10,
-			duration: 450,
-			ease: "Sine.easeInOut",
-		});
-		};
-
-		// start at segment 1 (move from current to path[1])
-		tweenNext();
+	for (const [id, pos] of Object.entries(LOCATIONS)) {
+		const dot = this.add.circle(pos.x, pos.y, 6, 0xffcc00).setDepth(1000);
+		this.add.text(pos.x + 8, pos.y - 10, id, { color: "#ffffff", fontSize: "12px" }).setDepth(1000);
+		dot.setAlpha(0.6);
 	}
+
+	
+	for (const [idx, pos] of Object.entries(SIDEWALK_POINTS)) {
+		const dot = this.add.circle(pos.x, pos.y, 6, 0xffcc00).setDepth(1000);
+		this.add.text(pos.x + 8, pos.y - 10, `sw_${idx}`, { color: "#ffffff", fontSize: "12px" }).setDepth(1000);
+		dot.setAlpha(0.4);
+	}
+	}
+
 	
 
 	create() {
+	this.editorCreate();
 
-		this.editorCreate();
-		this.drawAnchors();
+	this.buildSidewalkGraph();
 
-		// fake agents for testing
-		this.spawnAgent("a1", "Elara", LOCATIONS.town_hall.x - 40, LOCATIONS.town_hall.y);
-		this.spawnAgent("a2", "Marcus", LOCATIONS.school.x, LOCATIONS.school.y + 40);
-		this.spawnAgent("a3", "Ivy", LOCATIONS.cafe.x, LOCATIONS.cafe.y - 40);
+	this.drawAnchors();
 
-		// sends an agent on a path to a location every ten seconds for testing
-		this.time.addEvent({
-			delay: 10000,
-			loop: true,
-			callback: () => {
-				const agents = Array.from(this.agents.keys());
-				const locations = Object.values(LOCATIONS);
-				const randomAgent = agents[Math.floor(Math.random() * agents.length)];
-				const randomLocation = locations[Math.floor(Math.random() * locations.length)];
-				this.moveAgentAlongPath(randomAgent, randomLocation.x, randomLocation.y);
-			},
-		});
-		
+	// fake agents for testing
+	this.spawnAgent("a1", "Elara", LOCATIONS.town_hall.x - 40, LOCATIONS.town_hall.y);
+	this.spawnAgent("a2", "Marcus", LOCATIONS.school.x, LOCATIONS.school.y + 40);
+	this.spawnAgent("a3", "Ivy", LOCATIONS.cafe.x, LOCATIONS.cafe.y - 40);
 
-
+	// sends an agent on a path to a location every ten seconds for testing
+	this.time.addEvent({
+		delay: 7000,
+		loop: true,
+		callback: () => {
+		const agents = Array.from(this.agents.keys());
+		const locations = Object.values(LOCATIONS);
+		const randomAgent = agents[Math.floor(Math.random() * agents.length)];
+		const randomLocation = locations[Math.floor(Math.random() * locations.length)];
+		this.moveAgentAlongPath(randomAgent, randomLocation.x, randomLocation.y);
+		},
+	});
 	}
+
 
 	/* END-USER-CODE */
 }
