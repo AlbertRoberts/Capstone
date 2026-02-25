@@ -28,7 +28,7 @@
         {
             "type": "Rectangle",
             "id": "13ffd73f-1cc5-41bc-8411-cd3b13c77e01",
-            "label": "rectangle",
+            "label": "sidewalk_lead",
             "x": 644,
             "y": 628,
             "scaleX": 0.37167610523713657,
@@ -41,7 +41,7 @@
         {
             "type": "Rectangle",
             "id": "d7c53885-86c6-45da-95cb-4c4fd843c92d",
-            "label": "rectangle_2",
+            "label": "sidewalk_bottom",
             "x": 644,
             "y": 551,
             "scaleX": 0.32718513673271565,
@@ -55,7 +55,7 @@
         {
             "type": "Rectangle",
             "id": "7d437f48-042b-44ae-aa4e-466a22518ec3",
-            "label": "rectangle_3",
+            "label": "sidewalk_left",
             "x": 201,
             "y": 361,
             "scaleX": 0.37328872859877876,
@@ -68,7 +68,7 @@
         {
             "type": "Rectangle",
             "id": "ebd73bdc-6075-4bd4-a42f-4b624751880e",
-            "label": "rectangle_4",
+            "label": "sidewalk_right",
             "x": 1085,
             "y": 361,
             "scaleX": 0.37328872859877876,
@@ -81,7 +81,7 @@
         {
             "type": "Rectangle",
             "id": "6691a1e3-0964-43a4-838b-31d28199a1b4",
-            "label": "rectangle_5",
+            "label": "sidewalk_top",
             "x": 647,
             "y": 176,
             "scaleX": 0.32718513673271565,
@@ -289,7 +289,7 @@
         {
             "type": "Rectangle",
             "id": "127d1627-9948-4d4f-add0-2b86ea3d1393",
-            "label": "rectangle_24",
+            "label": "side_middle_left",
             "x": 466,
             "y": 364,
             "scaleX": 0.37328872859877876,
@@ -303,7 +303,7 @@
         {
             "type": "Rectangle",
             "id": "776848b6-5cee-4c53-b368-3a805e1fa260",
-            "label": "rectangle_25",
+            "label": "side_middle_right",
             "x": 831,
             "y": 365,
             "scaleX": 0.37328872859877876,
@@ -326,69 +326,6 @@
             "fillColor": "#90cc62",
             "width": 128,
             "height": 128
-        },
-        {
-            "type": "Text",
-            "id": "acab10b1-09a2-4548-9bb7-2b90405e89e5",
-            "label": "text_1",
-            "displayName": "da",
-            "x": 611,
-            "y": 345,
-            "text": "Town Hall"
-        },
-        {
-            "type": "Text",
-            "id": "fa1437ca-aa7e-4e7c-8f4e-79816cbba7b2",
-            "label": "text",
-            "displayName": "da",
-            "x": 277,
-            "y": 344,
-            "text": "School"
-        },
-        {
-            "type": "Text",
-            "id": "8991e643-67b9-4ca1-a302-73c400617076",
-            "label": "text_2",
-            "displayName": "da",
-            "x": 950,
-            "y": 259,
-            "text": "Clinic"
-        },
-        {
-            "type": "Text",
-            "id": "879bad82-d42f-4fdf-8c0f-a9057275c247",
-            "label": "text_3",
-            "displayName": "da",
-            "x": 942,
-            "y": 441,
-            "text": "Cafe"
-        },
-        {
-            "type": "Text",
-            "id": "f90eb4e5-22bd-4c08-92da-f6ba5c3d6a09",
-            "label": "text_4",
-            "displayName": "da",
-            "x": 360,
-            "y": 643,
-            "text": "Tavern"
-        },
-        {
-            "type": "Text",
-            "id": "ac91f7a6-ab20-4a23-8d76-79dcba06830b",
-            "label": "text_5",
-            "displayName": "da",
-            "x": 762,
-            "y": 631,
-            "text": "Market"
-        },
-        {
-            "type": "Text",
-            "id": "ab632ce7-f9bb-4e31-88b9-342eb1ca3e3d",
-            "label": "text_6",
-            "displayName": "da",
-            "x": 1013,
-            "y": 641,
-            "text": "Park\n"
         }
     ],
     "plainObjects": [],

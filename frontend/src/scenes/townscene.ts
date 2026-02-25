@@ -1,24 +1,46 @@
 
 // You can write more code here
 
+// anchor points for the locations in the town, used for navigation and interaction
+
+type LocationId = "town_hall" | "school" | "clinic" | "cafe" | "tavern" | "market" | "park";
+
+const LOCATIONS: Record<LocationId, { x: number; y: number }> = {
+town_hall: { x: 647, y: 369 },
+school: { x: 317, y: 363 },
+clinic: { x: 977, y: 268 },
+cafe: { x: 977, y: 450 },
+tavern: { x: 389, y: 643 },
+market: { x: 799, y: 646 },
+park: { x: 1102, y: 652 },
+};
+
+// anchor points for movement along the sidewalks
+const SIDEWALK_POINTS = [
+	{ x: 201, y: 361 },
+	{ x: 201, y: 176 },
+	{ x: 466, y: 364 },
+	{ x: 831, y: 365 },
+	{ x: 1085, y: 361 },
+	{ x: 1085, y: 551 },
+	{ x: 1085, y: 176 },
+	{ x: 647, y: 176 },
+	{ x: 644, y: 551 },
+	{ x: 201, y: 551},
+	{ x: 977, y: 450 },
+	{ x: 389, y: 551 },
+	{ x: 799, y: 551},
+	{ x: 644, y: 628 },
+];
+
 /* START OF COMPILED CODE */
 
 /* START-USER-IMPORTS */
+
+
+	
+
 /* END-USER-IMPORTS */
-
-	// anchor points for the locations in the town, used for navigation and interaction
-
-	type LocationId = "town_hall" | "school" | "clinic" | "cafe" | "tavern" | "market" | "park";
-
-	const LOCATIONS: Record<LocationId, { x: number; y: number }> = {
-	town_hall: { x: 647, y: 369 },
-	school: { x: 317, y: 363 },
-	clinic: { x: 977, y: 268 },
-	cafe: { x: 977, y: 450 },
-	tavern: { x: 389, y: 643 },
-	market: { x: 799, y: 646 },
-	park: { x: 1102, y: 652 },
-	};
 
 export default class townscene extends Phaser.Scene {
 
@@ -27,7 +49,7 @@ export default class townscene extends Phaser.Scene {
 
 		/* START-USER-CTR-CODE */
 
-		
+
 
 		/* END-USER-CTR-CODE */
 	}
@@ -41,42 +63,42 @@ export default class townscene extends Phaser.Scene {
 		rectangle_1.isFilled = true;
 		rectangle_1.fillColor = 3108670;
 
-		// rectangle
-		const rectangle = this.add.rectangle(644, 628, 128, 128);
-		rectangle.scaleX = 0.37167610523713657;
-		rectangle.scaleY = 1.4867068094771634;
-		rectangle.isFilled = true;
-		rectangle.fillColor = 9408399;
+		// sidewalk_lead
+		const sidewalk_lead = this.add.rectangle(644, 628, 128, 128);
+		sidewalk_lead.scaleX = 0.37167610523713657;
+		sidewalk_lead.scaleY = 1.4867068094771634;
+		sidewalk_lead.isFilled = true;
+		sidewalk_lead.fillColor = 9408399;
 
-		// rectangle_2
-		const rectangle_2 = this.add.rectangle(644, 551, 128, 128);
-		rectangle_2.scaleX = 0.32718513673271565;
-		rectangle_2.scaleY = 7.251572595017952;
-		rectangle_2.angle = -90;
-		rectangle_2.isFilled = true;
-		rectangle_2.fillColor = 9408399;
+		// sidewalk_bottom
+		const sidewalk_bottom = this.add.rectangle(644, 551, 128, 128);
+		sidewalk_bottom.scaleX = 0.32718513673271565;
+		sidewalk_bottom.scaleY = 7.251572595017952;
+		sidewalk_bottom.angle = -90;
+		sidewalk_bottom.isFilled = true;
+		sidewalk_bottom.fillColor = 9408399;
 
-		// rectangle_3
-		const rectangle_3 = this.add.rectangle(201, 361, 128, 128);
-		rectangle_3.scaleX = 0.37328872859877876;
-		rectangle_3.scaleY = 3.245378044183737;
-		rectangle_3.isFilled = true;
-		rectangle_3.fillColor = 9408399;
+		// sidewalk_left
+		const sidewalk_left = this.add.rectangle(201, 361, 128, 128);
+		sidewalk_left.scaleX = 0.37328872859877876;
+		sidewalk_left.scaleY = 3.245378044183737;
+		sidewalk_left.isFilled = true;
+		sidewalk_left.fillColor = 9408399;
 
-		// rectangle_4
-		const rectangle_4 = this.add.rectangle(1085, 361, 128, 128);
-		rectangle_4.scaleX = 0.37328872859877876;
-		rectangle_4.scaleY = 3.245378044183737;
-		rectangle_4.isFilled = true;
-		rectangle_4.fillColor = 9408399;
+		// sidewalk_right
+		const sidewalk_right = this.add.rectangle(1085, 361, 128, 128);
+		sidewalk_right.scaleX = 0.37328872859877876;
+		sidewalk_right.scaleY = 3.245378044183737;
+		sidewalk_right.isFilled = true;
+		sidewalk_right.fillColor = 9408399;
 
-		// rectangle_5
-		const rectangle_5 = this.add.rectangle(647, 176, 128, 128);
-		rectangle_5.scaleX = 0.32718513673271565;
-		rectangle_5.scaleY = 7.251572595017952;
-		rectangle_5.angle = -90;
-		rectangle_5.isFilled = true;
-		rectangle_5.fillColor = 9408399;
+		// sidewalk_top
+		const sidewalk_top = this.add.rectangle(647, 176, 128, 128);
+		sidewalk_top.scaleX = 0.32718513673271565;
+		sidewalk_top.scaleY = 7.251572595017952;
+		sidewalk_top.angle = -90;
+		sidewalk_top.isFilled = true;
+		sidewalk_top.fillColor = 9408399;
 
 		// School
 		const school = this.add.rectangle(317, 363, 128, 128);
@@ -170,21 +192,21 @@ export default class townscene extends Phaser.Scene {
 		tavern.isFilled = true;
 		tavern.fillColor = 4662308;
 
-		// rectangle_24
-		const rectangle_24 = this.add.rectangle(466, 364, 128, 128);
-		rectangle_24.scaleX = 0.37328872859877876;
-		rectangle_24.scaleY = 3.245378044183737;
-		rectangle_24.angle = 11;
-		rectangle_24.isFilled = true;
-		rectangle_24.fillColor = 9408399;
+		// side_middle_left
+		const side_middle_left = this.add.rectangle(466, 364, 128, 128);
+		side_middle_left.scaleX = 0.37328872859877876;
+		side_middle_left.scaleY = 3.245378044183737;
+		side_middle_left.angle = 11;
+		side_middle_left.isFilled = true;
+		side_middle_left.fillColor = 9408399;
 
-		// rectangle_25
-		const rectangle_25 = this.add.rectangle(831, 365, 128, 128);
-		rectangle_25.scaleX = 0.37328872859877876;
-		rectangle_25.scaleY = 3.245378044183737;
-		rectangle_25.angle = -11;
-		rectangle_25.isFilled = true;
-		rectangle_25.fillColor = 9408399;
+		// side_middle_right
+		const side_middle_right = this.add.rectangle(831, 365, 128, 128);
+		side_middle_right.scaleX = 0.37328872859877876;
+		side_middle_right.scaleY = 3.245378044183737;
+		side_middle_right.angle = -11;
+		side_middle_right.isFilled = true;
+		side_middle_right.fillColor = 9408399;
 
 		// Park
 		const park = this.add.rectangle(1102, 652, 128, 128);
@@ -192,41 +214,6 @@ export default class townscene extends Phaser.Scene {
 		park.scaleY = 0.416422309655215;
 		park.isFilled = true;
 		park.fillColor = 9489506;
-
-		// text_1
-		const text_1 = this.add.text(611, 345, "", {});
-		text_1.text = "Town Hall";
-		text_1.setStyle({  });
-
-		// text
-		const text = this.add.text(277, 344, "", {});
-		text.text = "School";
-		text.setStyle({  });
-
-		// text_2
-		const text_2 = this.add.text(950, 259, "", {});
-		text_2.text = "Clinic";
-		text_2.setStyle({  });
-
-		// text_3
-		const text_3 = this.add.text(942, 441, "", {});
-		text_3.text = "Cafe";
-		text_3.setStyle({  });
-
-		// text_4
-		const text_4 = this.add.text(360, 643, "", {});
-		text_4.text = "Tavern";
-		text_4.setStyle({  });
-
-		// text_5
-		const text_5 = this.add.text(762, 631, "", {});
-		text_5.text = "Market";
-		text_5.setStyle({  });
-
-		// text_6
-		const text_6 = this.add.text(1013, 641, "", {});
-		text_6.text = "Park\n";
-		text_6.setStyle({  });
 
 		this.events.emit("scene-awake");
 	}
@@ -257,6 +244,7 @@ export default class townscene extends Phaser.Scene {
 
 
 
+
 	// helper function to draw point at anchor locations
 	private drawAnchors() {
 		for (const [id, pos] of Object.entries(LOCATIONS)) {
@@ -264,7 +252,94 @@ export default class townscene extends Phaser.Scene {
 		  this.add.text(pos.x + 8, pos.y - 10, id, { color: "#ffffff", fontSize: "12px" }).setDepth(1000);
 		  dot.setAlpha(0.6);
 		}
+
+		for (const [id, pos] of Object.entries(SIDEWALK_POINTS)) {
+			const dot = this.add.circle(pos.x, pos.y, 6, 0xffcc00).setDepth(1000);
+			this.add.text(pos.x + 8, pos.y - 10, id, { color: "#ffffff", fontSize: "12px" }).setDepth(1000);
+			dot.setAlpha(0.6);
+		  }
 	  }
+
+	  private neighbors(of: {x:number; y:number}) {
+		const MAX_STEP = 260;  // adjust if needed
+		const EPS = 8;         // alignment tolerance
+		return SIDEWALK_POINTS.filter(p => {
+		  if (p === of) return false;
+		  const sameX = Math.abs(p.x - of.x) < EPS;
+		  const sameY = Math.abs(p.y - of.y) < EPS;
+		  if (!(sameX || sameY)) return false;
+		  const d = Phaser.Math.Distance.Between(p.x, p.y, of.x, of.y);
+		  return d <= MAX_STEP;
+		});
+	  }
+
+	// helper function to determine path from current location to destination using sidewalk points
+	private moveAgentAlongPath(id: string, destX: number, destY: number) {
+		const a = this.agents.get(id);
+		if (!a) return;
+
+		// find the closest sidewalk point to the agent's current position
+		const startPoint = SIDEWALK_POINTS.reduce((closest, point) => {
+		  const dist = Phaser.Math.Distance.Between(a.body.x, a.body.y, point.x, point.y);
+		  return dist < closest.dist ? { point, dist } : closest;
+		}, { point: SIDEWALK_POINTS[0], dist: Infinity }).point;
+
+		// find the closest sidewalk point to the destination
+		const endPoint = SIDEWALK_POINTS.reduce((closest, point) => {
+		  const dist = Phaser.Math.Distance.Between(destX, destY, point.x, point.y);
+		  return dist < closest.dist ? { point, dist } : closest;
+		}, { point: SIDEWALK_POINTS[0], dist: Infinity }).point;
+
+		// create a path from start to end using the sidewalk points
+		const path = [startPoint];
+		let currentPoint = startPoint;
+
+		while (currentPoint !== endPoint) {
+			const nbrs = this.neighbors(currentPoint);
+			const nextPoint = nbrs.reduce((best, p) => {
+			  const d = Phaser.Math.Distance.Between(p.x, p.y, endPoint.x, endPoint.y);
+			  return d < best.dist ? { point: p, dist: d } : best;
+			}, { point: null as any, dist: Infinity }).point;
+		  
+			if (!nextPoint) break;
+			path.push(nextPoint);
+			currentPoint = nextPoint;
+		}
+
+		path.push({ x: destX, y: destY }); // add final destination to path
+
+		// tween along the path points sequentially
+		let tweenIndex = 0;
+
+		const tweenNext = () => {
+		tweenIndex += 1; // ✅ move to next segment
+
+		if (tweenIndex >= path.length) return;
+
+		const to = path[tweenIndex];
+
+		this.tweens.add({
+			targets: a.body,
+			x: to.x,
+			y: to.y,
+			duration: 450,
+			ease: "Sine.easeInOut",
+			onComplete: tweenNext,
+		});
+
+		this.tweens.add({
+			targets: a.label,
+			x: to.x + 12,
+			y: to.y - 10,
+			duration: 450,
+			ease: "Sine.easeInOut",
+		});
+		};
+
+		// start at segment 1 (move from current to path[1])
+		tweenNext();
+	}
+	
 
 	create() {
 
@@ -275,20 +350,22 @@ export default class townscene extends Phaser.Scene {
 		this.spawnAgent("a1", "Elara", LOCATIONS.town_hall.x - 40, LOCATIONS.town_hall.y);
 		this.spawnAgent("a2", "Marcus", LOCATIONS.school.x, LOCATIONS.school.y + 40);
 		this.spawnAgent("a3", "Ivy", LOCATIONS.cafe.x, LOCATIONS.cafe.y - 40);
-	  
-		// sends an agent to a random location every two seconds
-		const ids: LocationId[] = Object.keys(LOCATIONS) as LocationId[];
+
+		// sends an agent on a path to a location every ten seconds for testing
 		this.time.addEvent({
-		  delay: 2000,
-		  loop: true,
-		  callback: () => {
-			for (const [agentId] of this.agents) {
-			  const dest = Phaser.Utils.Array.GetRandom(ids);
-			  const { x, y } = LOCATIONS[dest];
-			  this.moveAgentTo(agentId, x, y);
-			}
-		  },
+			delay: 10000,
+			loop: true,
+			callback: () => {
+				const agents = Array.from(this.agents.keys());
+				const locations = Object.values(LOCATIONS);
+				const randomAgent = agents[Math.floor(Math.random() * agents.length)];
+				const randomLocation = locations[Math.floor(Math.random() * locations.length)];
+				this.moveAgentAlongPath(randomAgent, randomLocation.x, randomLocation.y);
+			},
 		});
+		
+
+
 	}
 
 	/* END-USER-CODE */
