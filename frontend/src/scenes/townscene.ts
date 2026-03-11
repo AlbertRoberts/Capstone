@@ -260,6 +260,222 @@ export default class townscene extends Phaser.Scene {
 	}
 	}
 
+	// Sidewalk graph + pathfinding types
+
+	private sidewalkGraph = new Map<string, string[]>(); 
+	private sidewalkByKey = new Map<string, Pt>();       
+
+	private keyOf(p: Pt) {
+	return `${p.x},${p.y}`;
+	}
+
+	private dist(a: Pt, b: Pt) {
+	return Phaser.Math.Distance.Between(a.x, a.y, b.x, b.y);
+	}
+
+	private closestSidewalkPoint(x: number, y: number): Pt {
+	let best = SIDEWALK_POINTS[0];
+	let bestD = Infinity;
+
+	for (const p of SIDEWALK_POINTS) {
+		const d = Phaser.Math.Distance.Between(x, y, p.x, p.y);
+		if (d < bestD) {
+		bestD = d;
+		best = p;
+		}
+	}
+	return best;
+	}
+
+	/**
+	 * Build a graph from sidewalk points:
+	 * connect each point to its nearest neighbor left/right on same Y and up/down on same X.
+	 */
+	private buildSidewalkGraph() {
+		const EPS = 6; 
+	  
+		this.sidewalkGraph.clear();
+		this.sidewalkByKey.clear();
+	  
+		for (const p of SIDEWALK_POINTS) {
+		  const k = this.keyOf(p);
+		  this.sidewalkByKey.set(k, p);
+		  this.sidewalkGraph.set(k, []);
+		}
+	  
+		const link = (a: Pt, b: Pt) => {
+		  const ka = this.keyOf(a);
+		  const kb = this.keyOf(b);
+		  const aList = this.sidewalkGraph.get(ka)!;
+		  const bList = this.sidewalkGraph.get(kb)!;
+		  if (!aList.includes(kb)) aList.push(kb);
+		  if (!bList.includes(ka)) bList.push(ka);
+		};
+	  
+		for (const a of SIDEWALK_POINTS) {
+		  let left: Pt | null = null;
+		  let right: Pt | null = null;
+		  let up: Pt | null = null;
+		  let down: Pt | null = null;
+	  
+		  for (const b of SIDEWALK_POINTS) {
+			if (a === b) continue;
+	  
+			const sameY = Math.abs(b.y - a.y) <= EPS;
+			const sameX = Math.abs(b.x - a.x) <= EPS;
+	  
+			if (sameY) {
+			  if (b.x < a.x && (!left || b.x > left.x)) left = b;
+			  if (b.x > a.x && (!right || b.x < right.x)) right = b;
+			}
+	  
+			if (sameX) {
+			  if (b.y < a.y && (!up || b.y > up.y)) up = b;
+			  if (b.y > a.y && (!down || b.y < down.y)) down = b;
+			}
+		  }
+	  
+		  if (left) link(a, left);
+		  if (right) link(a, right);
+		  if (up) link(a, up);
+		  if (down) link(a, down);
+		}
+	  }
+	
+
+	private aStar(startKey: string, goalKey: string): string[] | null {
+	const start = this.sidewalkByKey.get(startKey);
+	const goal = this.sidewalkByKey.get(goalKey);
+	if (!start || !goal) return null;
+
+	const open = new Set<string>([startKey]);
+	const cameFrom = new Map<string, string>();
+
+	const gScore = new Map<string, number>();
+	const fScore = new Map<string, number>();
+
+	gScore.set(startKey, 0);
+	fScore.set(startKey, this.dist(start, goal));
+
+	const lowestF = () => {
+		let bestK: string | null = null;
+		let bestF = Infinity;
+		for (const k of open) {
+		const f = fScore.get(k) ?? Infinity;
+		if (f < bestF) {
+			bestF = f;
+			bestK = k;
+		}
+		}
+		return bestK;
+	};
+
+	while (open.size > 0) {
+		const current = lowestF();
+		if (!current) break;
+
+		if (current === goalKey) {
+		// reconstruct path
+		const path: string[] = [current];
+		let cur = current;
+		while (cameFrom.has(cur)) {
+			cur = cameFrom.get(cur)!;
+			path.push(cur);
+		}
+		path.reverse();
+		return path;
+		}
+
+		open.delete(current);
+
+		const curPt = this.sidewalkByKey.get(current)!;
+		const neighbors = this.sidewalkGraph.get(current) ?? [];
+
+		for (const nb of neighbors) {
+		const nbPt = this.sidewalkByKey.get(nb);
+		if (!nbPt) continue;
+
+		const tentativeG = (gScore.get(current) ?? Infinity) + this.dist(curPt, nbPt);
+
+		if (tentativeG < (gScore.get(nb) ?? Infinity)) {
+			cameFrom.set(nb, current);
+			gScore.set(nb, tentativeG);
+			fScore.set(nb, tentativeG + this.dist(nbPt, goal));
+			open.add(nb);
+		}
+		}
+	}
+
+	return null;
+	}
+
+	
+	/**
+	 * Move agent using sidewalk route
+	 * agent goes to nearest sidewalk node checks A* goes to nearest sidewalk node to destination goes to destination
+	 */
+	private moveAgentAlongPath(id: string, destX: number, destY: number) {
+	const a = this.agents.get(id);
+	if (!a) return;
+
+	this.tweens.killTweensOf(a.body);
+	this.tweens.killTweensOf(a.label);
+
+	const startSide = this.closestSidewalkPoint(a.body.x as number, a.body.y as number);
+	const endSide = this.closestSidewalkPoint(destX, destY);
+
+	const startKey = this.keyOf(startSide);
+	const goalKey = this.keyOf(endSide);
+
+	const keyPath = this.aStar(startKey, goalKey);
+
+	const route: Pt[] = [];
+
+	// walk onto sidewalk
+	route.push({ x: startSide.x, y: startSide.y });
+
+	// follow sidewalk path
+	if (keyPath && keyPath.length) {
+		for (const k of keyPath) {
+		const p = this.sidewalkByKey.get(k);
+		if (p) route.push({ x: p.x, y: p.y });
+		}
+	} else {
+		route.push({ x: endSide.x, y: endSide.y });
+	}
+
+	// walk off sidewalk
+	route.push({ x: destX, y: destY });
+
+	// remove duplicates
+	const cleaned: Pt[] = [];
+	for (const p of route) {
+		const prev = cleaned[cleaned.length - 1];
+		if (!prev || prev.x !== p.x || prev.y !== p.y) cleaned.push(p);
+	}
+
+	let i = 0;
+	const step = () => {
+		i++;
+		if (i >= cleaned.length) return;
+
+		const to = cleaned[i];
+		const from = { x: a.body.x as number, y: a.body.y as number };
+		const segLen = Phaser.Math.Distance.Between(from.x, from.y, to.x, to.y);
+
+		this.tweens.add({
+		targets: a.body,
+		x: to.x,
+		y: to.y,
+		duration: Math.max(180, segLen * 1.2),
+		ease: "Sine.easeInOut",
+		onUpdate: () => a.label.setPosition((a.body.x as number) + 12, (a.body.y as number) - 10),
+		onComplete: step,
+		});
+	};
+
+	step();
+	}
 	
 
 	create() {
