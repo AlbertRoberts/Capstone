@@ -45,12 +45,17 @@ const SIDEWALK_POINTS = [
 /* END-USER-IMPORTS */
 
 export default class townscene extends Phaser.Scene {
+	private agentCount = 3;
+
+	init(data: { agentCount?: number }) {
+	this.agentCount = data.agentCount ?? 3;
+	}
 
 	constructor() {
 		super("townscene");
 
 		/* START-USER-CTR-CODE */
-
+		
 
 
 		/* END-USER-CTR-CODE */
@@ -484,6 +489,10 @@ export default class townscene extends Phaser.Scene {
 	this.buildSidewalkGraph();
 
 	this.drawAnchors();
+
+	for (let i = 0; i < this.agentCount; i++) {
+		this.spawnAgent(`a${i}`, `Agent${i + 1}`, 647, 369);
+	}
 
 	// fake agents for testing
 	this.spawnAgent("a1", "Elara", LOCATIONS.town_hall.x - 40, LOCATIONS.town_hall.y);

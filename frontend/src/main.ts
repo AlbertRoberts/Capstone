@@ -1,6 +1,8 @@
 import Phaser from "phaser";
 import townscene from "./scenes/townscene";
 import Preload from "./scenes/Preload";
+import StartScene from "./scenes/StartScene";
+
 
 class Boot extends Phaser.Scene {
 
@@ -15,7 +17,7 @@ class Boot extends Phaser.Scene {
 
     create() {
 
-       this.scene.start("Preload");
+       this.scene.start("StartScene");
     }
 }
 
@@ -30,7 +32,7 @@ window.addEventListener('load', function () {
 			mode: Phaser.Scale.ScaleModes.FIT,
 			autoCenter: Phaser.Scale.Center.CENTER_BOTH
 		},
-		scene: [Boot, Preload, townscene]
+		scene: [Boot, Preload, StartScene, townscene]
 	});
 
 	game.scene.start("Boot");
