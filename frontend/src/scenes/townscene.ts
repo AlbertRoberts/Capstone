@@ -35,6 +35,8 @@ const SIDEWALK_POINTS = [
 	{ x: 644, y: 628 },
 ];
 
+import type { AgentConfig } from "./StartScene";
+
 /* START OF COMPILED CODE */
 
 /* START-USER-IMPORTS */
@@ -46,9 +48,10 @@ const SIDEWALK_POINTS = [
 
 export default class townscene extends Phaser.Scene {
 	private agentCount = 3;
+	private configuredAgents: AgentConfig[] = [];
 
-	init(data: { agentCount?: number }) {
-	this.agentCount = data.agentCount ?? 3;
+	init(data: { agents?: AgentConfig[] }) {
+		this.configuredAgents = data.agents ?? [];
 	}
 
 	constructor() {
@@ -494,10 +497,10 @@ export default class townscene extends Phaser.Scene {
 		this.spawnAgent(`a${i}`, `Agent${i + 1}`, 647, 369);
 	}
 
-	// fake agents for testing
-	this.spawnAgent("a1", "Elara", LOCATIONS.town_hall.x - 40, LOCATIONS.town_hall.y);
-	this.spawnAgent("a2", "Marcus", LOCATIONS.school.x, LOCATIONS.school.y + 40);
-	this.spawnAgent("a3", "Ivy", LOCATIONS.cafe.x, LOCATIONS.cafe.y - 40);
+	for (const agent of this.configuredAgents) {
+		const loc = LOCATIONS[agent.startingPoint];
+		this.spawnAgent(agent.id, agent.name, loc.x, loc.y);
+	}
 
 	// sends an agent on a path to a location every ten seconds for testing
 	this.time.addEvent({
