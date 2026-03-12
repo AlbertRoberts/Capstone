@@ -493,9 +493,6 @@ export default class townscene extends Phaser.Scene {
 
 	this.drawAnchors();
 
-	for (let i = 0; i < this.agentCount; i++) {
-		this.spawnAgent(`a${i}`, `Agent${i + 1}`, 647, 369);
-	}
 
 	for (const agent of this.configuredAgents) {
 		const loc = LOCATIONS[agent.startingPoint];
