@@ -113,7 +113,75 @@ export default class StartScene extends Phaser.Scene {
   }
 
   private addAgentRow(agentList: HTMLDivElement) {
-    
+    const row = document.createElement("div");
+    row.className = "agent-row";
+    row.style.display = "grid";
+    row.style.gridTemplateColumns = "1.2fr 1fr 2fr auto";
+    row.style.gap = "10px";
+    row.style.marginBottom = "12px";
+    row.style.padding = "12px";
+    row.style.background = "#111827";
+    row.style.borderRadius = "8px";
+    row.style.border = "1px solid #374151";
+
+    row.innerHTML = `
+      <input
+        type="text"
+        class="agent-name"
+        placeholder="Name"
+        style="padding:10px; border-radius:6px; border:1px solid #4b5563; background:#1f2937; color:white;"
+      />
+
+      <select
+        class="agent-start"
+        style="padding:10px; border-radius:6px; border:1px solid #4b5563; background:#1f2937; color:white;"
+      >
+        <option value="town_hall">Town Hall</option>
+        <option value="school">School</option>
+        <option value="clinic">Clinic</option>
+        <option value="cafe">Cafe</option>
+        <option value="tavern">Tavern</option>
+        <option value="market">Market</option>
+        <option value="park">Park</option>
+      </select>
+
+      <textarea
+        class="agent-personality"
+        rows="2"
+        placeholder="Describe this agent's personality..."
+        style="padding:10px; border-radius:6px; border:1px solid #4b5563; background:#1f2937; color:white; resize:vertical;"
+      ></textarea>
+
+      <button
+        class="remove-agent-btn"
+        style="padding:10px 12px; border-radius:6px; cursor:pointer; background:#7f1d1d; color:white; border:none;"
+      >
+        Remove
+      </button>
+    `;
+
+    const removeBtn = row.querySelector(".remove-agent-btn") as HTMLButtonElement;
+    removeBtn.onclick = () => row.remove();
+
+    agentList.appendChild(row);
+  }
+
+  private collectAgents(agentList: HTMLDivElement): AgentConfig[] {
+    const rows = Array.from(agentList.querySelectorAll(".agent-row"));
+
+    return rows.map((row, index) => {
+      const nameInput = row.querySelector(".agent-name") as HTMLInputElement;
+      const startInput = row.querySelector(".agent-start") as HTMLSelectElement;
+      const personalityInput = row.querySelector(".agent-personality") as HTMLTextAreaElement;
+
+      return {
+        id: `a${index + 1}`,
+        name: nameInput.value.trim() || `Agent ${index + 1}`,
+        startingPoint: startInput.value as StartingLocation,
+        personalityPrompt:
+          personalityInput.value.trim() || "Average town resident with no strong distinguishing traits.",
+      };
+    });
   }
 
   private cleanupForm() {
