@@ -245,6 +245,100 @@ export default class townscene extends Phaser.Scene {
 
 	/* START-USER-CODE */
 
+	// sidebar creation code
+
+	private createSidebar() {
+		const panel = document.createElement("div");
+		panel.id = "town-sidebar";
+		panel.style.position = "absolute";
+		panel.style.top = "0";
+		panel.style.right = "0";
+		panel.style.width = "320px";
+		panel.style.height = "100vh";
+		panel.style.background = "rgba(17, 24, 39, 0.96)";
+		panel.style.color = "white";
+		panel.style.padding = "16px";
+		panel.style.boxSizing = "border-box";
+		panel.style.borderLeft = "2px solid #374151";
+		panel.style.fontFamily = "Arial, sans-serif";
+		panel.style.zIndex = "1000";
+		panel.style.overflowY = "auto";
+	
+		panel.innerHTML = `
+			<h2 style="margin-top:0;">Town Status</h2>
+	
+			<div id="agent-status-section">
+				<h3>Agents</h3>
+				<div id="agent-status-list"></div>
+			</div>
+	
+			<hr style="margin:16px 0; border-color:#374151;" />
+	
+			<div id="event-log-section">
+				<h3>Event Log</h3>
+				<div id="event-log-list" style="display:flex; flex-direction:column; gap:8px;"></div>
+			</div>
+		`;
+	
+		document.body.appendChild(panel);
+		this.sidebarEl = panel;
+	}
+
+	private updateSidebarAgentStatus() {
+		if (!this.sidebarEl) return;
+	
+		const list = this.sidebarEl.querySelector("#agent-status-list") as HTMLDivElement;
+		if (!list) return;
+	
+		list.innerHTML = "";
+	
+		for (const [, agent] of this.agents) {
+			const row = document.createElement("div");
+			row.style.padding = "8px";
+			row.style.marginBottom = "8px";
+			row.style.background = "#1f2937";
+			row.style.borderRadius = "6px";
+			row.style.border = "1px solid #374151";
+	
+			row.innerHTML = `
+				<strong>${agent.label.text}</strong><br/>
+				Destination: ${agent.destination || "None"}<br/>
+				Status: ${agent.busy ? "moving / acting" : "idle"}<br/>
+				Action: ${agent.lastAction || "None"}
+			`;
+	
+			list.appendChild(row);
+		}
+	}
+
+	private addEventLog(message: string) {
+		if (!this.sidebarEl) return;
+	
+		const log = this.sidebarEl.querySelector("#event-log-list") as HTMLDivElement;
+		if (!log) return;
+	
+		const item = document.createElement("div");
+		item.style.padding = "8px";
+		item.style.background = "#111827";
+		item.style.border = "1px solid #374151";
+		item.style.borderRadius = "6px";
+		item.style.fontSize = "14px";
+		item.textContent = message;
+	
+		log.prepend(item);
+	
+		while (log.children.length > 30) {
+			log.removeChild(log.lastChild!);
+		}
+	}
+
+	private cleanupSidebar() {
+		if (this.sidebarEl) {
+			this.sidebarEl.remove();
+			this.sidebarEl = null;
+		}
+	}
+
 	// ─── Agent visual state ───────────────────────────────────────────────────
 
 	/** Maps frontend agent id (e.g. "a1") → visual objects + backend id */
@@ -254,7 +348,11 @@ export default class townscene extends Phaser.Scene {
 		statusText: Phaser.GameObjects.Text;
 		backendId: number;
 		busy: boolean;
+		destination: string;
+		lastAction: string;
 	}>();
+
+	private sidebarEl: HTMLDivElement | null = null;
 
 	// ─── Sidewalk graph ───────────────────────────────────────────────────────
 
@@ -498,12 +596,23 @@ export default class townscene extends Phaser.Scene {
 			color: "#ffffff",
 			fontSize: "14px",
 		}).setDepth(900);
-		const statusText = this.add.text(x + 12, y + 6, "…", {
+	
+		const statusText = this.add.text(x + 12, y + 6, "idle", {
 			color: "#9ca3af",
 			fontSize: "11px",
 		}).setDepth(900);
-
-		this.agents.set(frontendId, { body, label, statusText, backendId, busy: false });
+	
+		this.agents.set(frontendId, {
+			body,
+			label,
+			statusText,
+			backendId,
+			busy: false,
+			destination: "None",
+			lastAction: "None",
+		});
+	
+		this.updateSidebarAgentStatus();
 	}
 
 	/**
@@ -517,44 +626,48 @@ export default class townscene extends Phaser.Scene {
 	private async runAgentLoop(frontendId: string) {
 		const a = this.agents.get(frontendId);
 		if (!a) return;
-
-		// Prevent re-entry
+	
 		if (a.busy) return;
 		a.busy = true;
-
+		this.updateSidebarAgentStatus();
+	
 		try {
-			// 1. Ask backend what to do next
 			const { locationId, description } = await this.fetchNextAction(a.backendId);
 			const dest = LOCATIONS[locationId];
-
-			// Show intention
+	
+			a.destination = locationId;
+			a.lastAction = description || "Moving";
 			a.statusText.setText(description.length > 24 ? description.slice(0, 22) + "…" : description);
-
-			// 2. Walk there (await via Promise wrapping the callback)
+			this.updateSidebarAgentStatus();
+			this.addEventLog(`${a.label.text} plans to go to ${locationId}: ${description}`);
+	
 			await new Promise<void>(resolve => {
 				this.moveAgentAlongPath(frontendId, dest.x, dest.y, resolve);
 			});
-
-			// 3. Dwell
+	
+			this.addEventLog(`${a.label.text} arrived at ${locationId}.`);
+	
 			await new Promise<void>(resolve => this.time.delayedCall(DWELL_MS, resolve));
-
-			// 4. Report arrival
+	
 			await this.reportArrival(a.backendId, locationId, description);
-
+	
 			a.statusText.setText("idle");
+			a.lastAction = "idle";
 		} catch (err) {
 			console.error(`[${frontendId}] agent loop error:`, err);
 			a.statusText.setText("⚠ error");
-
-			// Back off for 10 s before retrying
+			a.lastAction = "error";
+			this.addEventLog(`${a.label.text} hit an error while acting.`);
+	
 			await new Promise<void>(resolve => this.time.delayedCall(10_000, resolve));
 		}
-
+	
 		a.busy = false;
-
-		// Schedule next tick (slight stagger per agent to avoid request bursts)
+		this.updateSidebarAgentStatus();
+	
 		this.time.delayedCall(500, () => this.runAgentLoop(frontendId));
 	}
+
 
 	// ─── Debug helpers ────────────────────────────────────────────────────────
 
@@ -575,28 +688,34 @@ export default class townscene extends Phaser.Scene {
 	// ─── Scene entry point ────────────────────────────────────────────────────
 
 	async create() {
-		this.editorCreate();
-		this.buildSidewalkGraph();
-		this.drawAnchors();
+	this.editorCreate();
+	this.buildSidewalkGraph();
+	this.drawAnchors();
+	this.createSidebar();
 
-		for (const cfg of this.configuredAgents) {
-			const loc = LOCATIONS[cfg.startingPoint];
+	this.events.once("shutdown", () => this.cleanupSidebar());
+	this.events.once("destroy", () => this.cleanupSidebar());
 
-			try {
-				// Register in backend
-				const backendId = await this.registerAgent(cfg);
-				this.spawnAgent(cfg.id, cfg.name, loc.x, loc.y, backendId);
+	for (const cfg of this.configuredAgents) {
+		const loc = LOCATIONS[cfg.startingPoint];
 
-				// Stagger each agent's first loop start so they don't all hit the API at once
-				const idx = this.configuredAgents.indexOf(cfg);
-				this.time.delayedCall(idx * 1500, () => this.runAgentLoop(cfg.id));
+		try {
+			const backendId = await this.registerAgent(cfg);
+			this.spawnAgent(cfg.id, cfg.name, loc.x, loc.y, backendId);
 
-				console.log(`[${cfg.name}] registered as backend id ${backendId}`);
-			} catch (err) {
-				console.error(`Failed to register ${cfg.name}:`, err);
-			}
+			const idx = this.configuredAgents.indexOf(cfg);
+			this.time.delayedCall(idx * 1500, () => this.runAgentLoop(cfg.id));
+
+			this.addEventLog(`${cfg.name} entered the town at ${cfg.startingPoint}.`);
+			console.log(`[${cfg.name}] registered as backend id ${backendId}`);
+		} catch (err) {
+			console.error(`Failed to register ${cfg.name}:`, err);
+			this.addEventLog(`Failed to register ${cfg.name}.`);
 		}
 	}
+
+	this.updateSidebarAgentStatus();
+}
 
 	/* END-USER-CODE */
 }
