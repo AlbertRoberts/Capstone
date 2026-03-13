@@ -1,4 +1,3 @@
-
 // You can write more code here
 
 // anchor points for the locations in the town, used for navigation and interaction
@@ -8,13 +7,13 @@ type LocationId = "town_hall" | "school" | "clinic" | "cafe" | "tavern" | "marke
 type Pt = { x: number; y: number };
 
 const LOCATIONS: Record<LocationId, { x: number; y: number }> = {
-town_hall: { x: 647, y: 369 },
-school: { x: 317, y: 363 },
-clinic: { x: 977, y: 268 },
-cafe: { x: 977, y: 450 },
-tavern: { x: 389, y: 643 },
-market: { x: 799, y: 646 },
-park: { x: 1102, y: 652 },
+	town_hall: { x: 647, y: 369 },
+	school: { x: 317, y: 363 },
+	clinic: { x: 977, y: 268 },
+	cafe: { x: 977, y: 450 },
+	tavern: { x: 389, y: 643 },
+	market: { x: 799, y: 646 },
+	park: { x: 1102, y: 652 },
 };
 
 // anchor points for movement along the sidewalks
@@ -28,26 +27,48 @@ const SIDEWALK_POINTS = [
 	{ x: 1085, y: 176 },
 	{ x: 647, y: 176 },
 	{ x: 644, y: 551 },
-	{ x: 201, y: 551},
+	{ x: 201, y: 551 },
 	{ x: 977, y: 450 },
 	{ x: 389, y: 551 },
-	{ x: 799, y: 551},
+	{ x: 799, y: 551 },
 	{ x: 644, y: 628 },
 ];
+
+// ─── Backend config ───────────────────────────────────────────────────────────
+const API_BASE = "http://localhost:8000";
+
+/** How long an agent waits at a destination before requesting the next action */
+const DWELL_MS = 5000;
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface BackendAgent {
+	id: number;
+	name: string;
+	personality: string;
+	location: string;
+	current_action: string;
+}
+
+interface BackendAction {
+	description: string;
+	scheduled_time: string | null;
+}
+
+interface BackendPlan {
+	agent_id: number;
+	date: string;
+	actions: BackendAction[];
+}
 
 import type { AgentConfig } from "./StartScene";
 
 /* START OF COMPILED CODE */
 
 /* START-USER-IMPORTS */
-
-
-	
-
 /* END-USER-IMPORTS */
 
 export default class townscene extends Phaser.Scene {
-	private agentCount = 3;
 	private configuredAgents: AgentConfig[] = [];
 
 	init(data: { agents?: AgentConfig[] }) {
@@ -56,12 +77,6 @@ export default class townscene extends Phaser.Scene {
 
 	constructor() {
 		super("townscene");
-
-		/* START-USER-CTR-CODE */
-		
-
-
-		/* END-USER-CTR-CODE */
 	}
 
 	editorCreate(): void {
@@ -230,289 +245,358 @@ export default class townscene extends Phaser.Scene {
 
 	/* START-USER-CODE */
 
-	// simple agent object
-	private agents = new Map<string, { body: Phaser.GameObjects.Arc; label: Phaser.GameObjects.Text }>();
+	// ─── Agent visual state ───────────────────────────────────────────────────
 
-	
-	private spawnAgent(id: string, name: string, x: number, y: number) {
-	const body = this.add.circle(x, y, 10, 0x4ade80).setDepth(900);
-	const label = this.add.text(x + 12, y - 10, name, { color: "#ffffff", fontSize: "14px" }).setDepth(900);
-	this.agents.set(id, { body, label });
-	}
+	/** Maps frontend agent id (e.g. "a1") → visual objects + backend id */
+	private agents = new Map<string, {
+		body: Phaser.GameObjects.Arc;
+		label: Phaser.GameObjects.Text;
+		statusText: Phaser.GameObjects.Text;
+		backendId: number;
+		busy: boolean;
+	}>();
 
-	// (optional) direct move
-	private moveAgentTo(id: string, x: number, y: number) {
-	const a = this.agents.get(id);
-	if (!a) return;
+	// ─── Sidewalk graph ───────────────────────────────────────────────────────
 
-	this.tweens.killTweensOf(a.body);
-	this.tweens.killTweensOf(a.label);
+	private sidewalkGraph = new Map<string, string[]>();
+	private sidewalkByKey = new Map<string, Pt>();
 
-	this.tweens.add({ targets: a.body, x, y, duration: 700, ease: "Sine.easeInOut" });
-	this.tweens.add({ targets: a.label, x: x + 12, y: y - 10, duration: 700, ease: "Sine.easeInOut" });
-	}
-
-	// helper function to draw point at anchor locations
-	private drawAnchors() {
-	for (const [id, pos] of Object.entries(LOCATIONS)) {
-		const dot = this.add.circle(pos.x, pos.y, 6, 0xffcc00).setDepth(1000);
-		this.add.text(pos.x + 8, pos.y - 10, id, { color: "#ffffff", fontSize: "12px" }).setDepth(1000);
-		dot.setAlpha(0.6);
-	}
-
-	
-	for (const [idx, pos] of Object.entries(SIDEWALK_POINTS)) {
-		const dot = this.add.circle(pos.x, pos.y, 6, 0xffcc00).setDepth(1000);
-		this.add.text(pos.x + 8, pos.y - 10, `sw_${idx}`, { color: "#ffffff", fontSize: "12px" }).setDepth(1000);
-		dot.setAlpha(0.4);
-	}
-	}
-
-	// Sidewalk graph + pathfinding types
-
-	private sidewalkGraph = new Map<string, string[]>(); 
-	private sidewalkByKey = new Map<string, Pt>();       
-
-	private keyOf(p: Pt) {
-	return `${p.x},${p.y}`;
-	}
+	private keyOf(p: Pt) { return `${p.x},${p.y}`; }
 
 	private dist(a: Pt, b: Pt) {
-	return Phaser.Math.Distance.Between(a.x, a.y, b.x, b.y);
+		return Phaser.Math.Distance.Between(a.x, a.y, b.x, b.y);
 	}
 
 	private closestSidewalkPoint(x: number, y: number): Pt {
-	let best = SIDEWALK_POINTS[0];
-	let bestD = Infinity;
-
-	for (const p of SIDEWALK_POINTS) {
-		const d = Phaser.Math.Distance.Between(x, y, p.x, p.y);
-		if (d < bestD) {
-		bestD = d;
-		best = p;
+		let best = SIDEWALK_POINTS[0];
+		let bestD = Infinity;
+		for (const p of SIDEWALK_POINTS) {
+			const d = Phaser.Math.Distance.Between(x, y, p.x, p.y);
+			if (d < bestD) { bestD = d; best = p; }
 		}
-	}
-	return best;
+		return best;
 	}
 
-	/**
-	 * Build a graph from sidewalk points:
-	 * connect each point to its nearest neighbor left/right on same Y and up/down on same X.
-	 */
 	private buildSidewalkGraph() {
-		const EPS = 6; 
-	  
+		const EPS = 6;
 		this.sidewalkGraph.clear();
 		this.sidewalkByKey.clear();
-	  
+
 		for (const p of SIDEWALK_POINTS) {
-		  const k = this.keyOf(p);
-		  this.sidewalkByKey.set(k, p);
-		  this.sidewalkGraph.set(k, []);
+			const k = this.keyOf(p);
+			this.sidewalkByKey.set(k, p);
+			this.sidewalkGraph.set(k, []);
 		}
-	  
+
 		const link = (a: Pt, b: Pt) => {
-		  const ka = this.keyOf(a);
-		  const kb = this.keyOf(b);
-		  const aList = this.sidewalkGraph.get(ka)!;
-		  const bList = this.sidewalkGraph.get(kb)!;
-		  if (!aList.includes(kb)) aList.push(kb);
-		  if (!bList.includes(ka)) bList.push(ka);
+			const ka = this.keyOf(a), kb = this.keyOf(b);
+			const aList = this.sidewalkGraph.get(ka)!;
+			const bList = this.sidewalkGraph.get(kb)!;
+			if (!aList.includes(kb)) aList.push(kb);
+			if (!bList.includes(ka)) bList.push(ka);
 		};
-	  
+
 		for (const a of SIDEWALK_POINTS) {
-		  let left: Pt | null = null;
-		  let right: Pt | null = null;
-		  let up: Pt | null = null;
-		  let down: Pt | null = null;
-	  
-		  for (const b of SIDEWALK_POINTS) {
-			if (a === b) continue;
-	  
-			const sameY = Math.abs(b.y - a.y) <= EPS;
-			const sameX = Math.abs(b.x - a.x) <= EPS;
-	  
-			if (sameY) {
-			  if (b.x < a.x && (!left || b.x > left.x)) left = b;
-			  if (b.x > a.x && (!right || b.x < right.x)) right = b;
+			let left: Pt | null = null, right: Pt | null = null;
+			let up: Pt | null = null, down: Pt | null = null;
+
+			for (const b of SIDEWALK_POINTS) {
+				if (a === b) continue;
+				const sameY = Math.abs(b.y - a.y) <= EPS;
+				const sameX = Math.abs(b.x - a.x) <= EPS;
+
+				if (sameY) {
+					if (b.x < a.x && (!left || b.x > left.x)) left = b;
+					if (b.x > a.x && (!right || b.x < right.x)) right = b;
+				}
+				if (sameX) {
+					if (b.y < a.y && (!up || b.y > up.y)) up = b;
+					if (b.y > a.y && (!down || b.y < down.y)) down = b;
+				}
 			}
-	  
-			if (sameX) {
-			  if (b.y < a.y && (!up || b.y > up.y)) up = b;
-			  if (b.y > a.y && (!down || b.y < down.y)) down = b;
-			}
-		  }
-	  
-		  if (left) link(a, left);
-		  if (right) link(a, right);
-		  if (up) link(a, up);
-		  if (down) link(a, down);
+
+			if (left) link(a, left);
+			if (right) link(a, right);
+			if (up) link(a, up);
+			if (down) link(a, down);
 		}
-	  }
-	
+	}
 
 	private aStar(startKey: string, goalKey: string): string[] | null {
-	const start = this.sidewalkByKey.get(startKey);
-	const goal = this.sidewalkByKey.get(goalKey);
-	if (!start || !goal) return null;
+		const start = this.sidewalkByKey.get(startKey);
+		const goal = this.sidewalkByKey.get(goalKey);
+		if (!start || !goal) return null;
 
-	const open = new Set<string>([startKey]);
-	const cameFrom = new Map<string, string>();
+		const open = new Set<string>([startKey]);
+		const cameFrom = new Map<string, string>();
+		const gScore = new Map<string, number>();
+		const fScore = new Map<string, number>();
 
-	const gScore = new Map<string, number>();
-	const fScore = new Map<string, number>();
+		gScore.set(startKey, 0);
+		fScore.set(startKey, this.dist(start, goal));
 
-	gScore.set(startKey, 0);
-	fScore.set(startKey, this.dist(start, goal));
+		const lowestF = () => {
+			let bestK: string | null = null, bestF = Infinity;
+			for (const k of open) {
+				const f = fScore.get(k) ?? Infinity;
+				if (f < bestF) { bestF = f; bestK = k; }
+			}
+			return bestK;
+		};
 
-	const lowestF = () => {
-		let bestK: string | null = null;
-		let bestF = Infinity;
-		for (const k of open) {
-		const f = fScore.get(k) ?? Infinity;
-		if (f < bestF) {
-			bestF = f;
-			bestK = k;
+		while (open.size > 0) {
+			const current = lowestF();
+			if (!current) break;
+
+			if (current === goalKey) {
+				const path: string[] = [current];
+				let cur = current;
+				while (cameFrom.has(cur)) { cur = cameFrom.get(cur)!; path.push(cur); }
+				path.reverse();
+				return path;
+			}
+
+			open.delete(current);
+			const curPt = this.sidewalkByKey.get(current)!;
+
+			for (const nb of (this.sidewalkGraph.get(current) ?? [])) {
+				const nbPt = this.sidewalkByKey.get(nb);
+				if (!nbPt) continue;
+				const tentativeG = (gScore.get(current) ?? Infinity) + this.dist(curPt, nbPt);
+				if (tentativeG < (gScore.get(nb) ?? Infinity)) {
+					cameFrom.set(nb, current);
+					gScore.set(nb, tentativeG);
+					fScore.set(nb, tentativeG + this.dist(nbPt, goal));
+					open.add(nb);
+				}
+			}
 		}
-		}
-		return bestK;
-	};
-
-	while (open.size > 0) {
-		const current = lowestF();
-		if (!current) break;
-
-		if (current === goalKey) {
-		// reconstruct path
-		const path: string[] = [current];
-		let cur = current;
-		while (cameFrom.has(cur)) {
-			cur = cameFrom.get(cur)!;
-			path.push(cur);
-		}
-		path.reverse();
-		return path;
-		}
-
-		open.delete(current);
-
-		const curPt = this.sidewalkByKey.get(current)!;
-		const neighbors = this.sidewalkGraph.get(current) ?? [];
-
-		for (const nb of neighbors) {
-		const nbPt = this.sidewalkByKey.get(nb);
-		if (!nbPt) continue;
-
-		const tentativeG = (gScore.get(current) ?? Infinity) + this.dist(curPt, nbPt);
-
-		if (tentativeG < (gScore.get(nb) ?? Infinity)) {
-			cameFrom.set(nb, current);
-			gScore.set(nb, tentativeG);
-			fScore.set(nb, tentativeG + this.dist(nbPt, goal));
-			open.add(nb);
-		}
-		}
+		return null;
 	}
 
-	return null;
-	}
+	/** Move agent along sidewalk path, call onComplete when arrived */
+	private moveAgentAlongPath(id: string, destX: number, destY: number, onComplete?: () => void) {
+		const a = this.agents.get(id);
+		if (!a) return;
 
-	
-	/**
-	 * Move agent using sidewalk route
-	 * agent goes to nearest sidewalk node checks A* goes to nearest sidewalk node to destination goes to destination
-	 */
-	private moveAgentAlongPath(id: string, destX: number, destY: number) {
-	const a = this.agents.get(id);
-	if (!a) return;
+		this.tweens.killTweensOf(a.body);
+		this.tweens.killTweensOf(a.label);
 
-	this.tweens.killTweensOf(a.body);
-	this.tweens.killTweensOf(a.label);
+		const startSide = this.closestSidewalkPoint(a.body.x, a.body.y);
+		const endSide = this.closestSidewalkPoint(destX, destY);
+		const keyPath = this.aStar(this.keyOf(startSide), this.keyOf(endSide));
 
-	const startSide = this.closestSidewalkPoint(a.body.x as number, a.body.y as number);
-	const endSide = this.closestSidewalkPoint(destX, destY);
+		const route: Pt[] = [{ x: startSide.x, y: startSide.y }];
 
-	const startKey = this.keyOf(startSide);
-	const goalKey = this.keyOf(endSide);
-
-	const keyPath = this.aStar(startKey, goalKey);
-
-	const route: Pt[] = [];
-
-	// walk onto sidewalk
-	route.push({ x: startSide.x, y: startSide.y });
-
-	// follow sidewalk path
-	if (keyPath && keyPath.length) {
-		for (const k of keyPath) {
-		const p = this.sidewalkByKey.get(k);
-		if (p) route.push({ x: p.x, y: p.y });
+		if (keyPath?.length) {
+			for (const k of keyPath) {
+				const p = this.sidewalkByKey.get(k);
+				if (p) route.push({ x: p.x, y: p.y });
+			}
+		} else {
+			route.push({ x: endSide.x, y: endSide.y });
 		}
-	} else {
-		route.push({ x: endSide.x, y: endSide.y });
+		route.push({ x: destX, y: destY });
+
+		// deduplicate
+		const cleaned: Pt[] = [];
+		for (const p of route) {
+			const prev = cleaned[cleaned.length - 1];
+			if (!prev || prev.x !== p.x || prev.y !== p.y) cleaned.push(p);
+		}
+
+		let i = 0;
+		const step = () => {
+			i++;
+			if (i >= cleaned.length) { onComplete?.(); return; }
+
+			const to = cleaned[i];
+			const from = { x: a.body.x, y: a.body.y };
+			const segLen = Phaser.Math.Distance.Between(from.x, from.y, to.x, to.y);
+
+			this.tweens.add({
+				targets: a.body,
+				x: to.x, y: to.y,
+				duration: Math.max(180, segLen * 1.2),
+				ease: "Sine.easeInOut",
+				onUpdate: () => {
+					a.label.setPosition(a.body.x + 12, a.body.y - 10);
+					a.statusText.setPosition(a.body.x + 12, a.body.y + 6);
+				},
+				onComplete: step,
+			});
+		};
+		step();
 	}
 
-	// walk off sidewalk
-	route.push({ x: destX, y: destY });
+	// ─── Backend API helpers ──────────────────────────────────────────────────
 
-	// remove duplicates
-	const cleaned: Pt[] = [];
-	for (const p of route) {
-		const prev = cleaned[cleaned.length - 1];
-		if (!prev || prev.x !== p.x || prev.y !== p.y) cleaned.push(p);
-	}
-
-	let i = 0;
-	const step = () => {
-		i++;
-		if (i >= cleaned.length) return;
-
-		const to = cleaned[i];
-		const from = { x: a.body.x as number, y: a.body.y as number };
-		const segLen = Phaser.Math.Distance.Between(from.x, from.y, to.x, to.y);
-
-		this.tweens.add({
-		targets: a.body,
-		x: to.x,
-		y: to.y,
-		duration: Math.max(180, segLen * 1.2),
-		ease: "Sine.easeInOut",
-		onUpdate: () => a.label.setPosition((a.body.x as number) + 12, (a.body.y as number) - 10),
-		onComplete: step,
+	/** Register an agent in the backend, returns its numeric id */
+	private async registerAgent(cfg: AgentConfig): Promise<number> {
+		const res = await fetch(`${API_BASE}/agents/`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				name: cfg.name,
+				personality: cfg.personalityPrompt,
+				location: cfg.startingPoint,
+				current_action: "idle",
+			}),
 		});
-	};
 
-	step();
-	}
-	
-
-	create() {
-	this.editorCreate();
-
-	this.buildSidewalkGraph();
-
-	this.drawAnchors();
-
-
-	for (const agent of this.configuredAgents) {
-		const loc = LOCATIONS[agent.startingPoint];
-		this.spawnAgent(agent.id, agent.name, loc.x, loc.y);
+		if (!res.ok) throw new Error(`Failed to register agent ${cfg.name}: ${res.status}`);
+		const data: BackendAgent = await res.json();
+		return data.id;
 	}
 
-	// sends an agent on a path to a location every ten seconds for testing
-	this.time.addEvent({
-		delay: 7000,
-		loop: true,
-		callback: () => {
-		const agents = Array.from(this.agents.keys());
-		const locations = Object.values(LOCATIONS);
-		const randomAgent = agents[Math.floor(Math.random() * agents.length)];
-		const randomLocation = locations[Math.floor(Math.random() * locations.length)];
-		this.moveAgentAlongPath(randomAgent, randomLocation.x, randomLocation.y);
-		},
-	});
+	/**
+	 * Ask the backend for this agent's next action.
+	 * Parses the action description for a known LocationId keyword.
+	 * Falls back to a random location if none found.
+	 */
+	private async fetchNextAction(backendId: number): Promise<{ locationId: LocationId; description: string }> {
+		const res = await fetch(`${API_BASE}/agents/${backendId}/plan`);
+
+		if (!res.ok) throw new Error(`Plan fetch failed for agent ${backendId}: ${res.status}`);
+
+		const plan: BackendPlan = await res.json();
+
+		// Pick the first action (or extend later to queue them all)
+		const action = plan.actions[0];
+		const desc = action?.description ?? "";
+
+		// Try to find a location keyword in the description
+		const locationKeys = Object.keys(LOCATIONS) as LocationId[];
+		const found = locationKeys.find(loc =>
+			desc.toLowerCase().includes(loc.replace("_", " ")) ||
+			desc.toLowerCase().includes(loc)
+		);
+
+		const locationId: LocationId = found ?? locationKeys[Math.floor(Math.random() * locationKeys.length)];
+
+		return { locationId, description: desc };
 	}
 
+	/** Tell the backend the agent has arrived and update its location */
+	private async reportArrival(backendId: number, locationId: LocationId, action: string): Promise<void> {
+		await fetch(`${API_BASE}/agents/${backendId}`, {
+			method: "PUT",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				location: locationId,
+				current_action: action,
+			}),
+		});
+	}
+
+	// ─── Agent lifecycle ──────────────────────────────────────────────────────
+
+	/** Spawn visuals for an agent */
+	private spawnAgent(frontendId: string, name: string, x: number, y: number, backendId: number) {
+		const body = this.add.circle(x, y, 10, 0x4ade80).setDepth(900);
+		const label = this.add.text(x + 12, y - 10, name, {
+			color: "#ffffff",
+			fontSize: "14px",
+		}).setDepth(900);
+		const statusText = this.add.text(x + 12, y + 6, "…", {
+			color: "#9ca3af",
+			fontSize: "11px",
+		}).setDepth(900);
+
+		this.agents.set(frontendId, { body, label, statusText, backendId, busy: false });
+	}
+
+	/**
+	 * Main agent loop:
+	 * 1. Fetch next action from backend
+	 * 2. Move to target location
+	 * 3. Dwell briefly
+	 * 4. Report arrival to backend
+	 * 5. Repeat
+	 */
+	private async runAgentLoop(frontendId: string) {
+		const a = this.agents.get(frontendId);
+		if (!a) return;
+
+		// Prevent re-entry
+		if (a.busy) return;
+		a.busy = true;
+
+		try {
+			// 1. Ask backend what to do next
+			const { locationId, description } = await this.fetchNextAction(a.backendId);
+			const dest = LOCATIONS[locationId];
+
+			// Show intention
+			a.statusText.setText(description.length > 24 ? description.slice(0, 22) + "…" : description);
+
+			// 2. Walk there (await via Promise wrapping the callback)
+			await new Promise<void>(resolve => {
+				this.moveAgentAlongPath(frontendId, dest.x, dest.y, resolve);
+			});
+
+			// 3. Dwell
+			await new Promise<void>(resolve => this.time.delayedCall(DWELL_MS, resolve));
+
+			// 4. Report arrival
+			await this.reportArrival(a.backendId, locationId, description);
+
+			a.statusText.setText("idle");
+		} catch (err) {
+			console.error(`[${frontendId}] agent loop error:`, err);
+			a.statusText.setText("⚠ error");
+
+			// Back off for 10 s before retrying
+			await new Promise<void>(resolve => this.time.delayedCall(10_000, resolve));
+		}
+
+		a.busy = false;
+
+		// Schedule next tick (slight stagger per agent to avoid request bursts)
+		this.time.delayedCall(500, () => this.runAgentLoop(frontendId));
+	}
+
+	// ─── Debug helpers ────────────────────────────────────────────────────────
+
+	private drawAnchors() {
+		for (const [id, pos] of Object.entries(LOCATIONS)) {
+			const dot = this.add.circle(pos.x, pos.y, 6, 0xffcc00).setDepth(1000);
+			this.add.text(pos.x + 8, pos.y - 10, id, { color: "#ffffff", fontSize: "12px" }).setDepth(1000);
+			dot.setAlpha(0.6);
+		}
+
+		for (const [idx, pos] of Object.entries(SIDEWALK_POINTS)) {
+			const dot = this.add.circle(pos.x, pos.y, 6, 0xffcc00).setDepth(1000);
+			this.add.text(pos.x + 8, pos.y - 10, `sw_${idx}`, { color: "#ffffff", fontSize: "12px" }).setDepth(1000);
+			dot.setAlpha(0.4);
+		}
+	}
+
+	// ─── Scene entry point ────────────────────────────────────────────────────
+
+	async create() {
+		this.editorCreate();
+		this.buildSidewalkGraph();
+		this.drawAnchors();
+
+		for (const cfg of this.configuredAgents) {
+			const loc = LOCATIONS[cfg.startingPoint];
+
+			try {
+				// Register in backend
+				const backendId = await this.registerAgent(cfg);
+				this.spawnAgent(cfg.id, cfg.name, loc.x, loc.y, backendId);
+
+				// Stagger each agent's first loop start so they don't all hit the API at once
+				const idx = this.configuredAgents.indexOf(cfg);
+				this.time.delayedCall(idx * 1500, () => this.runAgentLoop(cfg.id));
+
+				console.log(`[${cfg.name}] registered as backend id ${backendId}`);
+			} catch (err) {
+				console.error(`Failed to register ${cfg.name}:`, err);
+			}
+		}
+	}
 
 	/* END-USER-CODE */
 }
