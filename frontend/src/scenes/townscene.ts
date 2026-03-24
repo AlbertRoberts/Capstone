@@ -2,37 +2,98 @@
 
 // anchor points for the locations in the town, used for navigation and interaction
 
-type LocationId = "town_hall" | "school" | "clinic" | "cafe" | "tavern" | "market" | "park";
+type LocationId =
+  | "town_hall"
+  | "school"
+  | "clinic"
+  | "cafe"
+  | "tavern"
+  | "market"
+  | "park";
 
 type Pt = { x: number; y: number };
 
-const LOCATIONS: Record<LocationId, { x: number; y: number }> = {
-	town_hall: { x: 647, y: 369 },
-	school: { x: 317, y: 363 },
-	clinic: { x: 977, y: 268 },
-	cafe: { x: 977, y: 450 },
-	tavern: { x: 389, y: 643 },
-	market: { x: 799, y: 646 },
-	park: { x: 1102, y: 652 },
+const LOCATIONS: Record<LocationId, Pt> = {
+  town_hall: { x: 647, y: 369 },
+  school: { x: 317, y: 363 },
+  clinic: { x: 977, y: 268 },
+  cafe: { x: 977, y: 450 },
+  tavern: { x: 389, y: 643 },
+  market: { x: 799, y: 646 },
+  park: { x: 1102, y: 652 },
 };
 
-// anchor points for movement along the sidewalks
-const SIDEWALK_POINTS = [
-	{ x: 201, y: 361 },
-	{ x: 201, y: 176 },
-	{ x: 466, y: 364 },
-	{ x: 831, y: 365 },
-	{ x: 1085, y: 361 },
-	{ x: 1085, y: 551 },
-	{ x: 1085, y: 176 },
-	{ x: 647, y: 176 },
-	{ x: 644, y: 551 },
-	{ x: 201, y: 551 },
-	{ x: 977, y: 450 },
-	{ x: 389, y: 551 },
-	{ x: 799, y: 551 },
-	{ x: 644, y: 628 },
-];
+const ENTRANCES: Record<LocationId, Pt> = {
+  town_hall: { x: 647, y: 551 },
+  school: { x: 201, y: 363 },
+  clinic: { x: 1085, y: 268 },
+  cafe: { x: 977, y: 551 },
+  tavern: { x: 389, y: 551 },
+  market: { x: 799, y: 551 },
+  park: { x: 1085, y: 551 },
+};
+
+const SIDEWALK_SEGMENTS = [
+	// top horizontal
+	{ x1: 201, y1: 176, x2: 1085, y2: 176 },
+  
+	// middle horizontal left and right only
+	{ x1: 201, y1: 361, x2: 466, y2: 361 },
+	{ x1: 831, y1: 361, x2: 1085, y2: 361 },
+  
+	// bottom horizontal
+	{ x1: 201, y1: 551, x2: 1085, y2: 551 },
+  
+	// left vertical
+	{ x1: 201, y1: 176, x2: 201, y2: 551 },
+  
+	// right vertical
+	{ x1: 1085, y1: 176, x2: 1085, y2: 551 },
+  
+	// center bottom lead only
+	{ x1: 647, y1: 551, x2: 647, y2: 628 },
+  
+	// entrance connectors
+	{ x1: 389, y1: 551, x2: 389, y2: 643 },   // tavern
+	{ x1: 799, y1: 551, x2: 799, y2: 646 },   // market
+  ];
+
+function uniquePoints(points: Pt[]): Pt[] {
+  const seen = new Set<string>();
+  const out: Pt[] = [];
+
+  for (const p of points) {
+    const key = `${p.x},${p.y}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      out.push(p);
+    }
+  }
+
+  return out;
+}
+
+function generateSidewalkPoints(step = 60): Pt[] {
+  const pts: Pt[] = [];
+
+  for (const seg of SIDEWALK_SEGMENTS) {
+    const dx = seg.x2 - seg.x1;
+    const dy = seg.y2 - seg.y1;
+    const length = Math.hypot(dx, dy);
+    const steps = Math.max(1, Math.floor(length / step));
+
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      const x = Math.round(seg.x1 + dx * t);
+      const y = Math.round(seg.y1 + dy * t);
+      pts.push({ x, y });
+    }
+  }
+
+  return uniquePoints(pts);
+}
+
+const SIDEWALK_POINTS: Pt[] = generateSidewalkPoints(60);
 
 // ─── Backend config ───────────────────────────────────────────────────────────
 const API_BASE = "http://localhost:8000";
@@ -377,48 +438,56 @@ export default class townscene extends Phaser.Scene {
 
 	private buildSidewalkGraph() {
 		const EPS = 6;
+	  
 		this.sidewalkGraph.clear();
 		this.sidewalkByKey.clear();
-
+	  
 		for (const p of SIDEWALK_POINTS) {
-			const k = this.keyOf(p);
-			this.sidewalkByKey.set(k, p);
-			this.sidewalkGraph.set(k, []);
+		  const k = this.keyOf(p);
+		  this.sidewalkByKey.set(k, p);
+		  this.sidewalkGraph.set(k, []);
 		}
-
+	  
 		const link = (a: Pt, b: Pt) => {
-			const ka = this.keyOf(a), kb = this.keyOf(b);
-			const aList = this.sidewalkGraph.get(ka)!;
-			const bList = this.sidewalkGraph.get(kb)!;
-			if (!aList.includes(kb)) aList.push(kb);
-			if (!bList.includes(ka)) bList.push(ka);
+		  const ka = this.keyOf(a);
+		  const kb = this.keyOf(b);
+	  
+		  const aList = this.sidewalkGraph.get(ka)!;
+		  const bList = this.sidewalkGraph.get(kb)!;
+	  
+		  if (!aList.includes(kb)) aList.push(kb);
+		  if (!bList.includes(ka)) bList.push(ka);
 		};
-
+	  
 		for (const a of SIDEWALK_POINTS) {
-			let left: Pt | null = null, right: Pt | null = null;
-			let up: Pt | null = null, down: Pt | null = null;
-
-			for (const b of SIDEWALK_POINTS) {
-				if (a === b) continue;
-				const sameY = Math.abs(b.y - a.y) <= EPS;
-				const sameX = Math.abs(b.x - a.x) <= EPS;
-
-				if (sameY) {
-					if (b.x < a.x && (!left || b.x > left.x)) left = b;
-					if (b.x > a.x && (!right || b.x < right.x)) right = b;
-				}
-				if (sameX) {
-					if (b.y < a.y && (!up || b.y > up.y)) up = b;
-					if (b.y > a.y && (!down || b.y < down.y)) down = b;
-				}
+		  let left: Pt | null = null;
+		  let right: Pt | null = null;
+		  let up: Pt | null = null;
+		  let down: Pt | null = null;
+	  
+		  for (const b of SIDEWALK_POINTS) {
+			if (a === b) continue;
+	  
+			const sameY = Math.abs(a.y - b.y) <= EPS;
+			const sameX = Math.abs(a.x - b.x) <= EPS;
+	  
+			if (sameY) {
+			  if (b.x < a.x && (!left || b.x > left.x)) left = b;
+			  if (b.x > a.x && (!right || b.x < right.x)) right = b;
 			}
-
-			if (left) link(a, left);
-			if (right) link(a, right);
-			if (up) link(a, up);
-			if (down) link(a, down);
+	  
+			if (sameX) {
+			  if (b.y < a.y && (!up || b.y > up.y)) up = b;
+			  if (b.y > a.y && (!down || b.y < down.y)) down = b;
+			}
+		  }
+	  
+		  if (left) link(a, left);
+		  if (right) link(a, right);
+		  if (up) link(a, up);
+		  if (down) link(a, down);
 		}
-	}
+	  }
 
 	private aStar(startKey: string, goalKey: string): string[] | null {
 		const start = this.sidewalkByKey.get(startKey);
@@ -473,79 +542,90 @@ export default class townscene extends Phaser.Scene {
 	}
 
 	/** Move agent along sidewalk path, call onComplete when arrived */
-	private moveAgentAlongPath(id: string, destX: number, destY: number, onComplete?: () => void) {
-		const a = this.agents.get(id);
-		if (!a) return;
-
-		this.tweens.killTweensOf(a.body);
-		this.tweens.killTweensOf(a.label);
-
-		const startSide = this.closestSidewalkPoint(a.body.x, a.body.y);
-		const endSide = this.closestSidewalkPoint(destX, destY);
-		const keyPath = this.aStar(this.keyOf(startSide), this.keyOf(endSide));
-
-		const route: Pt[] = [{ x: startSide.x, y: startSide.y }];
-
-		if (keyPath?.length) {
-			for (const k of keyPath) {
-				const p = this.sidewalkByKey.get(k);
-				if (p) route.push({ x: p.x, y: p.y });
-			}
+	private moveAgentAlongPath(frontendId: string, locationId: LocationId, onComplete?: () => void) {
+		const agent = this.agents.get(frontendId);
+		if (!agent) return;
+	  
+		this.tweens.killTweensOf(agent.body);
+		this.tweens.killTweensOf(agent.label);
+		this.tweens.killTweensOf(agent.statusText);
+	  
+		const destination = ENTRANCES[locationId];
+	  
+		const startSide = this.closestSidewalkPoint(agent.body.x, agent.body.y);
+		const endSide = this.closestSidewalkPoint(destination.x, destination.y);
+	  
+		const startKey = this.keyOf(startSide);
+		const goalKey = this.keyOf(endSide);
+	  
+		const keyPath = this.aStar(startKey, goalKey);
+	  
+		const route: Pt[] = [];
+		route.push(startSide);
+	  
+		if (keyPath && keyPath.length > 0) {
+		  for (const k of keyPath) {
+			const p = this.sidewalkByKey.get(k);
+			if (p) route.push(p);
+		  }
 		} else {
-			route.push({ x: endSide.x, y: endSide.y });
+		  route.push(endSide);
 		}
-		route.push({ x: destX, y: destY });
-
-		// deduplicate
+	  
+		route.push(destination);
+	  
 		const cleaned: Pt[] = [];
 		for (const p of route) {
-			const prev = cleaned[cleaned.length - 1];
-			if (!prev || prev.x !== p.x || prev.y !== p.y) cleaned.push(p);
+		  const prev = cleaned[cleaned.length - 1];
+		  if (!prev || prev.x !== p.x || prev.y !== p.y) {
+			cleaned.push(p);
+		  }
 		}
-
+	  
+		agent.destination = locationId;
+		agent.lastAction = `Moving to ${locationId}`;
+		agent.busy = true;
+		agent.statusText.setText("walking");
+		this.updateSidebarAgentStatus();
+	  
+		const SPEED = 140; // pixels per second
+	  
 		let i = 0;
 		const step = () => {
-			i++;
-			if (i >= cleaned.length) { onComplete?.(); return; }
-
-			const to = cleaned[i];
-			const from = { x: a.body.x, y: a.body.y };
-			const segLen = Phaser.Math.Distance.Between(from.x, from.y, to.x, to.y);
-
-			this.tweens.add({
-				targets: a.body,
-				x: to.x, y: to.y,
-				duration: Math.max(180, segLen * 1.2),
-				ease: "Sine.easeInOut",
-				onUpdate: () => {
-					a.label.setPosition(a.body.x + 12, a.body.y - 10);
-					a.statusText.setPosition(a.body.x + 12, a.body.y + 6);
-				},
-				onComplete: step,
-			});
+		  i += 1;
+	  
+		  if (i >= cleaned.length) {
+			agent.busy = false;
+			agent.statusText.setText("idle");
+			agent.lastAction = `Arrived at ${locationId}`;
+			this.updateSidebarAgentStatus();
+			this.addEventLog(`${agent.label.text} arrived at ${locationId}.`);
+			onComplete?.();
+			return;
+		  }
+	  
+		  const to = cleaned[i];
+		  const from = { x: agent.body.x, y: agent.body.y };
+		  const segLen = Phaser.Math.Distance.Between(from.x, from.y, to.x, to.y);
+		  const duration = (segLen / SPEED) * 1000;
+	  
+		  this.tweens.add({
+			targets: agent.body,
+			x: to.x,
+			y: to.y,
+			duration,
+			ease: "Linear",
+			onUpdate: () => {
+			  agent.label.setPosition(agent.body.x + 12, agent.body.y - 10);
+			  agent.statusText.setPosition(agent.body.x + 12, agent.body.y + 6);
+			},
+			onComplete: step,
+		  });
 		};
+	  
+		this.addEventLog(`${agent.label.text} started moving to ${locationId}.`);
 		step();
-	}
-
-	// ─── Backend API helpers ──────────────────────────────────────────────────
-
-	/** Register an agent in the backend, returns its numeric id */
-	private async registerAgent(cfg: AgentConfig): Promise<number> {
-		const res = await fetch(`${API_BASE}/agents/`, {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({
-				name: cfg.name,
-				personality: cfg.personalityPrompt,
-				location: cfg.startingPoint,
-				current_action: "idle",
-			}),
-		});
-
-		if (!res.ok) throw new Error(`Failed to register agent ${cfg.name}: ${res.status}`);
-		const data: BackendAgent = await res.json();
-		return data.id;
-	}
+	  }
 
 	/**
 	 * Ask the backend for this agent's next action.
@@ -633,16 +713,14 @@ export default class townscene extends Phaser.Scene {
 	
 		try {
 			const { locationId, description } = await this.fetchNextAction(a.backendId);
-			const dest = LOCATIONS[locationId];
-	
 			a.destination = locationId;
 			a.lastAction = description || "Moving";
 			a.statusText.setText(description.length > 24 ? description.slice(0, 22) + "…" : description);
 			this.updateSidebarAgentStatus();
 			this.addEventLog(`${a.label.text} plans to go to ${locationId}: ${description}`);
-	
+
 			await new Promise<void>(resolve => {
-				this.moveAgentAlongPath(frontendId, dest.x, dest.y, resolve);
+				this.moveAgentAlongPath(frontendId, locationId, resolve);
 			});
 	
 			this.addEventLog(`${a.label.text} arrived at ${locationId}.`);
@@ -680,8 +758,18 @@ export default class townscene extends Phaser.Scene {
 
 		for (const [idx, pos] of Object.entries(SIDEWALK_POINTS)) {
 			const dot = this.add.circle(pos.x, pos.y, 6, 0xffcc00).setDepth(1000);
-			this.add.text(pos.x + 8, pos.y - 10, `sw_${idx}`, { color: "#ffffff", fontSize: "12px" }).setDepth(1000);
 			dot.setAlpha(0.4);
+		}
+	}
+
+	private drawEntrances() {
+		for (const [id, pos] of Object.entries(ENTRANCES)) {
+		  const dot = this.add.circle(pos.x, pos.y, 5, 0x00ffff).setDepth(1100);
+		  this.add.text(pos.x + 8, pos.y + 8, `entry_${id}`, {
+			color: "#00ffff",
+			fontSize: "11px",
+		  }).setDepth(1100);
+		  dot.setAlpha(0.85);
 		}
 	}
 
@@ -692,6 +780,7 @@ export default class townscene extends Phaser.Scene {
 	this.buildSidewalkGraph();
 	this.drawAnchors();
 	this.createSidebar();
+	this.drawEntrances();
 
 	this.events.once("shutdown", () => this.cleanupSidebar());
 	this.events.once("destroy", () => this.cleanupSidebar());
