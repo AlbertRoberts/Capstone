@@ -2,13 +2,13 @@ from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 
+
 class AgentBase(BaseModel):
     name: str = Field(..., example="Alice")
     personality: Optional[str] = Field(None, example="Curious and friendly")
-    location: Optional[str] = Field(None, example="Park")
+    location: Optional[str] = Field(None, example="park")
     current_action: Optional[str] = Field(None, example="Walking to the cafe")
 
-#work on later-------------------
 class AgentCreate(AgentBase):
     pass
 
@@ -21,8 +21,7 @@ class AgentResponse(AgentBase):
     id: int
 
     class Config:
-        orm_mode = True
-
+        from_attributes = True
 
 
 class MemoryBase(BaseModel):
@@ -38,7 +37,8 @@ class MemoryResponse(MemoryBase):
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
+
 
 class Action(BaseModel):
     description: str = Field(..., example="Walk to the library")
@@ -48,3 +48,11 @@ class DailyPlan(BaseModel):
     agent_id: int
     date: datetime
     actions: List[Action]
+
+
+class SimState(BaseModel):
+    """Current simulation clock state — returned by GET /simulation/state"""
+    time: str = Field(..., example="9:04am")
+    day_period: str = Field(..., example="morning")
+    hour: int
+    minute: int

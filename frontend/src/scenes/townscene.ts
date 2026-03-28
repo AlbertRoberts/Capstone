@@ -56,52 +56,42 @@ const SIDEWALK_SEGMENTS = [
 	// entrance connectors
 	{ x1: 389, y1: 551, x2: 389, y2: 643 },   // tavern
 	{ x1: 799, y1: 551, x2: 799, y2: 646 },   // market
-  ];
+];
 
 function uniquePoints(points: Pt[]): Pt[] {
   const seen = new Set<string>();
   const out: Pt[] = [];
-
   for (const p of points) {
     const key = `${p.x},${p.y}`;
-    if (!seen.has(key)) {
-      seen.add(key);
-      out.push(p);
-    }
+    if (!seen.has(key)) { seen.add(key); out.push(p); }
   }
-
   return out;
 }
 
 function generateSidewalkPoints(step = 60): Pt[] {
   const pts: Pt[] = [];
-
   for (const seg of SIDEWALK_SEGMENTS) {
     const dx = seg.x2 - seg.x1;
     const dy = seg.y2 - seg.y1;
     const length = Math.hypot(dx, dy);
     const steps = Math.max(1, Math.floor(length / step));
-
     for (let i = 0; i <= steps; i++) {
       const t = i / steps;
-      const x = Math.round(seg.x1 + dx * t);
-      const y = Math.round(seg.y1 + dy * t);
-      pts.push({ x, y });
+      pts.push({ x: Math.round(seg.x1 + dx * t), y: Math.round(seg.y1 + dy * t) });
     }
   }
-
   return uniquePoints(pts);
 }
 
 const SIDEWALK_POINTS: Pt[] = generateSidewalkPoints(60);
 
-// ─── Backend config ───────────────────────────────────────────────────────────
+// Backend config
 const API_BASE = "http://localhost:8000";
 
 /** How long an agent waits at a destination before requesting the next action */
 const DWELL_MS = 5000;
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// Types
 
 interface BackendAgent {
 	id: number;
@@ -142,21 +132,18 @@ export default class townscene extends Phaser.Scene {
 
 	editorCreate(): void {
 
-		// rectangle_1
 		const rectangle_1 = this.add.rectangle(632, 371, 128, 128);
 		rectangle_1.scaleX = 10.180187948025909;
 		rectangle_1.scaleY = 5.833727976370516;
 		rectangle_1.isFilled = true;
 		rectangle_1.fillColor = 3108670;
 
-		// sidewalk_lead
 		const sidewalk_lead = this.add.rectangle(644, 628, 128, 128);
 		sidewalk_lead.scaleX = 0.37167610523713657;
 		sidewalk_lead.scaleY = 1.4867068094771634;
 		sidewalk_lead.isFilled = true;
 		sidewalk_lead.fillColor = 9408399;
 
-		// sidewalk_bottom
 		const sidewalk_bottom = this.add.rectangle(644, 551, 128, 128);
 		sidewalk_bottom.scaleX = 0.32718513673271565;
 		sidewalk_bottom.scaleY = 7.251572595017952;
@@ -164,21 +151,18 @@ export default class townscene extends Phaser.Scene {
 		sidewalk_bottom.isFilled = true;
 		sidewalk_bottom.fillColor = 9408399;
 
-		// sidewalk_left
 		const sidewalk_left = this.add.rectangle(201, 361, 128, 128);
 		sidewalk_left.scaleX = 0.37328872859877876;
 		sidewalk_left.scaleY = 3.245378044183737;
 		sidewalk_left.isFilled = true;
 		sidewalk_left.fillColor = 9408399;
 
-		// sidewalk_right
 		const sidewalk_right = this.add.rectangle(1085, 361, 128, 128);
 		sidewalk_right.scaleX = 0.37328872859877876;
 		sidewalk_right.scaleY = 3.245378044183737;
 		sidewalk_right.isFilled = true;
 		sidewalk_right.fillColor = 9408399;
 
-		// sidewalk_top
 		const sidewalk_top = this.add.rectangle(647, 176, 128, 128);
 		sidewalk_top.scaleX = 0.32718513673271565;
 		sidewalk_top.scaleY = 7.251572595017952;
@@ -186,99 +170,81 @@ export default class townscene extends Phaser.Scene {
 		sidewalk_top.isFilled = true;
 		sidewalk_top.fillColor = 9408399;
 
-		// School
 		const school = this.add.rectangle(317, 363, 128, 128);
 		school.scaleY = 2.466942142176058;
 		school.isFilled = true;
 		school.fillColor = 4662308;
 
-		// House 4
 		const house_4 = this.add.rectangle(305, 66, 128, 128);
 		house_4.isFilled = true;
 		house_4.fillColor = 4662308;
 
-		// House 5
 		const house_5 = this.add.rectangle(481, 66, 128, 128);
 		house_5.isFilled = true;
 		house_5.fillColor = 4662308;
 
-		// House 6
 		const house_6 = this.add.rectangle(668, 66, 128, 128);
 		house_6.isFilled = true;
 		house_6.fillColor = 4662308;
 
-		// House 7
 		const house_7 = this.add.rectangle(852, 66, 128, 128);
 		house_7.isFilled = true;
 		house_7.fillColor = 4662308;
 
-		// House 8
 		const house_8 = this.add.rectangle(1019, 66, 128, 128);
 		house_8.isFilled = true;
 		house_8.fillColor = 4662308;
 
-		// House 9
 		const house_9 = this.add.rectangle(1209, 224, 128, 128);
 		house_9.isFilled = true;
 		house_9.fillColor = 4662308;
 
-		// House 10
 		const house_10 = this.add.rectangle(1212, 372, 128, 128);
 		house_10.isFilled = true;
 		house_10.fillColor = 4662308;
 
-		// rectangle_15
 		const rectangle_15 = this.add.rectangle(1209, 527, 128, 128);
 		rectangle_15.isFilled = true;
 		rectangle_15.fillColor = 4662308;
 
-		// House 1
 		const house_1 = this.add.rectangle(85, 545, 128, 128);
 		house_1.isFilled = true;
 		house_1.fillColor = 4662308;
 
-		// House 2
 		const house_2 = this.add.rectangle(82, 378, 128, 128);
 		house_2.isFilled = true;
 		house_2.fillColor = 4662308;
 
-		// House 3
 		const house_3 = this.add.rectangle(79, 218, 128, 128);
 		house_3.isFilled = true;
 		house_3.fillColor = 4662308;
 
-		// Cafe
 		const cafe = this.add.rectangle(977, 450, 128, 128);
 		cafe.isFilled = true;
 		cafe.fillColor = 4662308;
 
-		// Clinic
 		const clinic = this.add.rectangle(977, 268, 128, 128);
 		clinic.isFilled = true;
 		clinic.fillColor = 4662308;
 
-		// Town Hall
 		const town_Hall = this.add.rectangle(647, 369, 128, 128);
 		town_Hall.scaleX = 2.001800422483393;
 		town_Hall.scaleY = 1.1617588487187138;
 		town_Hall.isFilled = true;
 		town_Hall.fillColor = 4662308;
 
-		// Market
 		const market = this.add.rectangle(799, 646, 128, 128);
 		market.scaleX = 1.4865908809477275;
 		market.scaleY = 0.8796780398859774;
 		market.isFilled = true;
 		market.fillColor = 4662308;
 
-		// Tavern
 		const tavern = this.add.rectangle(389, 643, 128, 128);
 		tavern.scaleX = 2.777556167090955;
 		tavern.scaleY = 0.696841503238748;
 		tavern.isFilled = true;
 		tavern.fillColor = 4662308;
 
-		// side_middle_left
 		const side_middle_left = this.add.rectangle(466, 364, 128, 128);
 		side_middle_left.scaleX = 0.37328872859877876;
 		side_middle_left.scaleY = 3.245378044183737;
@@ -286,7 +252,6 @@ export default class townscene extends Phaser.Scene {
 		side_middle_left.isFilled = true;
 		side_middle_left.fillColor = 9408399;
 
-		// side_middle_right
 		const side_middle_right = this.add.rectangle(831, 365, 128, 128);
 		side_middle_right.scaleX = 0.37328872859877876;
 		side_middle_right.scaleY = 3.245378044183737;
@@ -294,7 +259,6 @@ export default class townscene extends Phaser.Scene {
 		side_middle_right.isFilled = true;
 		side_middle_right.fillColor = 9408399;
 
-		// Park
 		const park = this.add.rectangle(1102, 652, 128, 128);
 		park.scaleX = 2.288062440058767;
 		park.scaleY = 0.416422309655215;
@@ -306,7 +270,7 @@ export default class townscene extends Phaser.Scene {
 
 	/* START-USER-CODE */
 
-	// sidebar creation code
+	// Sidebar
 
 	private createSidebar() {
 		const panel = document.createElement("div");
@@ -324,35 +288,38 @@ export default class townscene extends Phaser.Scene {
 		panel.style.fontFamily = "Arial, sans-serif";
 		panel.style.zIndex = "1000";
 		panel.style.overflowY = "auto";
-	
+
 		panel.innerHTML = `
 			<h2 style="margin-top:0;">Town Status</h2>
-	
+
+			<div style="margin-bottom:12px; color:#9ca3af; font-size:13px;">
+				<span>Sim time: </span><span id="sim-clock">8:00am</span>
+			</div>
+
 			<div id="agent-status-section">
 				<h3>Agents</h3>
 				<div id="agent-status-list"></div>
 			</div>
-	
+
 			<hr style="margin:16px 0; border-color:#374151;" />
-	
+
 			<div id="event-log-section">
 				<h3>Event Log</h3>
 				<div id="event-log-list" style="display:flex; flex-direction:column; gap:8px;"></div>
 			</div>
 		`;
-	
+
 		document.body.appendChild(panel);
 		this.sidebarEl = panel;
 	}
 
 	private updateSidebarAgentStatus() {
 		if (!this.sidebarEl) return;
-	
 		const list = this.sidebarEl.querySelector("#agent-status-list") as HTMLDivElement;
 		if (!list) return;
-	
+
 		list.innerHTML = "";
-	
+
 		for (const [, agent] of this.agents) {
 			const row = document.createElement("div");
 			row.style.padding = "8px";
@@ -360,37 +327,42 @@ export default class townscene extends Phaser.Scene {
 			row.style.background = "#1f2937";
 			row.style.borderRadius = "6px";
 			row.style.border = "1px solid #374151";
-	
+
 			row.innerHTML = `
 				<strong>${agent.label.text}</strong><br/>
 				Destination: ${agent.destination || "None"}<br/>
 				Status: ${agent.busy ? "moving / acting" : "idle"}<br/>
 				Action: ${agent.lastAction || "None"}
 			`;
-	
+
 			list.appendChild(row);
 		}
 	}
 
 	private addEventLog(message: string) {
 		if (!this.sidebarEl) return;
-	
 		const log = this.sidebarEl.querySelector("#event-log-list") as HTMLDivElement;
 		if (!log) return;
-	
+
 		const item = document.createElement("div");
 		item.style.padding = "8px";
 		item.style.background = "#111827";
 		item.style.border = "1px solid #374151";
 		item.style.borderRadius = "6px";
 		item.style.fontSize = "14px";
-		item.textContent = message;
-	
+		item.textContent = `[${this.getSimTime()}] ${message}`;
+
 		log.prepend(item);
-	
+
 		while (log.children.length > 30) {
 			log.removeChild(log.lastChild!);
 		}
+	}
+
+	private updateSimClock() {
+		if (!this.sidebarEl) return;
+		const clockEl = this.sidebarEl.querySelector("#sim-clock");
+		if (clockEl) clockEl.textContent = this.getSimTime();
 	}
 
 	private cleanupSidebar() {
@@ -400,9 +372,8 @@ export default class townscene extends Phaser.Scene {
 		}
 	}
 
-	// ─── Agent visual state ───────────────────────────────────────────────────
+	// Agent visual state
 
-	/** Maps frontend agent id (e.g. "a1") → visual objects + backend id */
 	private agents = new Map<string, {
 		body: Phaser.GameObjects.Arc;
 		label: Phaser.GameObjects.Text;
@@ -415,7 +386,7 @@ export default class townscene extends Phaser.Scene {
 
 	private sidebarEl: HTMLDivElement | null = null;
 
-	// ─── Sidewalk graph ───────────────────────────────────────────────────────
+	// Sidewalk graph
 
 	private sidewalkGraph = new Map<string, string[]>();
 	private sidewalkByKey = new Map<string, Pt>();
@@ -438,66 +409,58 @@ export default class townscene extends Phaser.Scene {
 
 	private buildSidewalkGraph() {
 		const EPS = 6;
-	  
 		this.sidewalkGraph.clear();
 		this.sidewalkByKey.clear();
-	  
+
 		for (const p of SIDEWALK_POINTS) {
-		  const k = this.keyOf(p);
-		  this.sidewalkByKey.set(k, p);
-		  this.sidewalkGraph.set(k, []);
+			const k = this.keyOf(p);
+			this.sidewalkByKey.set(k, p);
+			this.sidewalkGraph.set(k, []);
 		}
-	  
+
 		const link = (a: Pt, b: Pt) => {
-		  const ka = this.keyOf(a);
-		  const kb = this.keyOf(b);
-	  
-		  const aList = this.sidewalkGraph.get(ka)!;
-		  const bList = this.sidewalkGraph.get(kb)!;
-	  
-		  if (!aList.includes(kb)) aList.push(kb);
-		  if (!bList.includes(ka)) bList.push(ka);
+			const ka = this.keyOf(a), kb = this.keyOf(b);
+			const aList = this.sidewalkGraph.get(ka)!;
+			const bList = this.sidewalkGraph.get(kb)!;
+			if (!aList.includes(kb)) aList.push(kb);
+			if (!bList.includes(ka)) bList.push(ka);
 		};
-	  
+
 		for (const a of SIDEWALK_POINTS) {
-		  let left: Pt | null = null;
-		  let right: Pt | null = null;
-		  let up: Pt | null = null;
-		  let down: Pt | null = null;
-	  
-		  for (const b of SIDEWALK_POINTS) {
-			if (a === b) continue;
-	  
-			const sameY = Math.abs(a.y - b.y) <= EPS;
-			const sameX = Math.abs(a.x - b.x) <= EPS;
-	  
-			if (sameY) {
-			  if (b.x < a.x && (!left || b.x > left.x)) left = b;
-			  if (b.x > a.x && (!right || b.x < right.x)) right = b;
+			let left: Pt | null = null, right: Pt | null = null;
+			let up: Pt | null = null, down: Pt | null = null;
+
+			for (const b of SIDEWALK_POINTS) {
+				if (a === b) continue;
+				const sameY = Math.abs(a.y - b.y) <= EPS;
+				const sameX = Math.abs(a.x - b.x) <= EPS;
+
+				if (sameY) {
+					if (b.x < a.x && (!left  || b.x > left.x))  left  = b;
+					if (b.x > a.x && (!right || b.x < right.x)) right = b;
+				}
+				if (sameX) {
+					if (b.y < a.y && (!up   || b.y > up.y))   up   = b;
+					if (b.y > a.y && (!down || b.y < down.y)) down = b;
+				}
 			}
-	  
-			if (sameX) {
-			  if (b.y < a.y && (!up || b.y > up.y)) up = b;
-			  if (b.y > a.y && (!down || b.y < down.y)) down = b;
-			}
-		  }
-	  
-		  if (left) link(a, left);
-		  if (right) link(a, right);
-		  if (up) link(a, up);
-		  if (down) link(a, down);
+
+			if (left)  link(a, left);
+			if (right) link(a, right);
+			if (up)    link(a, up);
+			if (down)  link(a, down);
 		}
-	  }
+	}
 
 	private aStar(startKey: string, goalKey: string): string[] | null {
 		const start = this.sidewalkByKey.get(startKey);
-		const goal = this.sidewalkByKey.get(goalKey);
+		const goal  = this.sidewalkByKey.get(goalKey);
 		if (!start || !goal) return null;
 
 		const open = new Set<string>([startKey]);
 		const cameFrom = new Map<string, string>();
-		const gScore = new Map<string, number>();
-		const fScore = new Map<string, number>();
+		const gScore   = new Map<string, number>();
+		const fScore   = new Map<string, number>();
 
 		gScore.set(startKey, 0);
 		fScore.set(startKey, this.dist(start, goal));
@@ -541,109 +504,105 @@ export default class townscene extends Phaser.Scene {
 		return null;
 	}
 
-	/** Move agent along sidewalk path, call onComplete when arrived */
 	private moveAgentAlongPath(frontendId: string, locationId: LocationId, onComplete?: () => void) {
 		const agent = this.agents.get(frontendId);
 		if (!agent) return;
-	  
+
 		this.tweens.killTweensOf(agent.body);
 		this.tweens.killTweensOf(agent.label);
 		this.tweens.killTweensOf(agent.statusText);
-	  
+
 		const destination = ENTRANCES[locationId];
-	  
-		const startSide = this.closestSidewalkPoint(agent.body.x, agent.body.y);
-		const endSide = this.closestSidewalkPoint(destination.x, destination.y);
-	  
-		const startKey = this.keyOf(startSide);
-		const goalKey = this.keyOf(endSide);
-	  
-		const keyPath = this.aStar(startKey, goalKey);
-	  
-		const route: Pt[] = [];
-		route.push(startSide);
-	  
+		const startSide   = this.closestSidewalkPoint(agent.body.x, agent.body.y);
+		const endSide     = this.closestSidewalkPoint(destination.x, destination.y);
+		const keyPath     = this.aStar(this.keyOf(startSide), this.keyOf(endSide));
+
+		const route: Pt[] = [startSide];
+
 		if (keyPath && keyPath.length > 0) {
-		  for (const k of keyPath) {
-			const p = this.sidewalkByKey.get(k);
-			if (p) route.push(p);
-		  }
+			for (const k of keyPath) {
+				const p = this.sidewalkByKey.get(k);
+				if (p) route.push(p);
+			}
 		} else {
-		  route.push(endSide);
+			route.push(endSide);
 		}
-	  
 		route.push(destination);
-	  
+
 		const cleaned: Pt[] = [];
 		for (const p of route) {
-		  const prev = cleaned[cleaned.length - 1];
-		  if (!prev || prev.x !== p.x || prev.y !== p.y) {
-			cleaned.push(p);
-		  }
+			const prev = cleaned[cleaned.length - 1];
+			if (!prev || prev.x !== p.x || prev.y !== p.y) cleaned.push(p);
 		}
-	  
+
 		agent.destination = locationId;
-		agent.lastAction = `Moving to ${locationId}`;
-		agent.busy = true;
+		agent.lastAction  = `Moving to ${locationId}`;
+		agent.busy        = true;
 		agent.statusText.setText("walking");
 		this.updateSidebarAgentStatus();
-	  
+
 		const SPEED = 140; // pixels per second
-	  
 		let i = 0;
+
 		const step = () => {
-		  i += 1;
-	  
-		  if (i >= cleaned.length) {
-			agent.busy = false;
-			agent.statusText.setText("idle");
-			agent.lastAction = `Arrived at ${locationId}`;
-			this.updateSidebarAgentStatus();
-			this.addEventLog(`${agent.label.text} arrived at ${locationId}.`);
-			onComplete?.();
-			return;
-		  }
-	  
-		  const to = cleaned[i];
-		  const from = { x: agent.body.x, y: agent.body.y };
-		  const segLen = Phaser.Math.Distance.Between(from.x, from.y, to.x, to.y);
-		  const duration = (segLen / SPEED) * 1000;
-	  
-		  this.tweens.add({
-			targets: agent.body,
-			x: to.x,
-			y: to.y,
-			duration,
-			ease: "Linear",
-			onUpdate: () => {
-			  agent.label.setPosition(agent.body.x + 12, agent.body.y - 10);
-			  agent.statusText.setPosition(agent.body.x + 12, agent.body.y + 6);
-			},
-			onComplete: step,
-		  });
+			i += 1;
+			if (i >= cleaned.length) {
+				agent.busy = false;
+				agent.statusText.setText("idle");
+				agent.lastAction = `Arrived at ${locationId}`;
+				this.updateSidebarAgentStatus();
+				onComplete?.();
+				return;
+			}
+
+			const to     = cleaned[i];
+			const from   = { x: agent.body.x, y: agent.body.y };
+			const segLen = Phaser.Math.Distance.Between(from.x, from.y, to.x, to.y);
+
+			this.tweens.add({
+				targets:  agent.body,
+				x:        to.x,
+				y:        to.y,
+				duration: (segLen / SPEED) * 1000,
+				ease:     "Linear",
+				onUpdate: () => {
+					agent.label.setPosition(agent.body.x + 12, agent.body.y - 10);
+					agent.statusText.setPosition(agent.body.x + 12, agent.body.y + 6);
+				},
+				onComplete: step,
+			});
 		};
-	  
+
 		this.addEventLog(`${agent.label.text} started moving to ${locationId}.`);
 		step();
-	  }
+	}
 
-	/**
-	 * Ask the backend for this agent's next action.
-	 * Parses the action description for a known LocationId keyword.
-	 * Falls back to a random location if none found.
-	 */
+	// Backend API helpers
+
+	private async registerAgent(cfg: AgentConfig): Promise<number> {
+		const res = await fetch(`${API_BASE}/agents/`, {
+			method:  "POST",
+			headers: { "Content-Type": "application/json" },
+			body:    JSON.stringify({
+				name:           cfg.name,
+				personality:    cfg.personalityPrompt,
+				location:       cfg.startingPoint,
+				current_action: "idle",
+			}),
+		});
+		if (!res.ok) throw new Error(`Failed to register agent ${cfg.name}: ${res.status}`);
+		const data: BackendAgent = await res.json();
+		return data.id;
+	}
+
 	private async fetchNextAction(backendId: number): Promise<{ locationId: LocationId; description: string }> {
 		const res = await fetch(`${API_BASE}/agents/${backendId}/plan`);
-
 		if (!res.ok) throw new Error(`Plan fetch failed for agent ${backendId}: ${res.status}`);
 
 		const plan: BackendPlan = await res.json();
-
-		// Pick the first action (or extend later to queue them all)
 		const action = plan.actions[0];
-		const desc = action?.description ?? "";
+		const desc   = action?.description ?? "";
 
-		// Try to find a location keyword in the description
 		const locationKeys = Object.keys(LOCATIONS) as LocationId[];
 		const found = locationKeys.find(loc =>
 			desc.toLowerCase().includes(loc.replace("_", " ")) ||
@@ -651,47 +610,51 @@ export default class townscene extends Phaser.Scene {
 		);
 
 		const locationId: LocationId = found ?? locationKeys[Math.floor(Math.random() * locationKeys.length)];
-
 		return { locationId, description: desc };
 	}
 
-	/** Tell the backend the agent has arrived and update its location */
 	private async reportArrival(backendId: number, locationId: LocationId, action: string): Promise<void> {
 		await fetch(`${API_BASE}/agents/${backendId}`, {
-			method: "PUT",
+			method:  "PUT",
 			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({
-				location: locationId,
-				current_action: action,
-			}),
+			body:    JSON.stringify({ location: locationId, current_action: action }),
 		});
 	}
 
-	// ─── Agent lifecycle ──────────────────────────────────────────────────────
-
-	/** Spawn visuals for an agent */
-	private spawnAgent(frontendId: string, name: string, x: number, y: number, backendId: number) {
-		const body = this.add.circle(x, y, 10, 0x4ade80).setDepth(900);
-		const label = this.add.text(x + 12, y - 10, name, {
-			color: "#ffffff",
-			fontSize: "14px",
-		}).setDepth(900);
-	
-		const statusText = this.add.text(x + 12, y + 6, "idle", {
-			color: "#9ca3af",
-			fontSize: "11px",
-		}).setDepth(900);
-	
-		this.agents.set(frontendId, {
-			body,
-			label,
-			statusText,
-			backendId,
-			busy: false,
-			destination: "None",
-			lastAction: "None",
+	/**
+	 * Write a memory entry for this agent via the backend API.
+	 * importance: 0.0 (trivial) → 1.0 (life-changing)
+	 */
+	private async writeMemory(backendId: number, content: string, importance: number): Promise<void> {
+		await fetch(`${API_BASE}/agents/${backendId}/memory`, {
+			method:  "POST",
+			headers: { "Content-Type": "application/json" },
+			body:    JSON.stringify({ agent_id: backendId, content, importance }),
 		});
-	
+	}
+
+	/**
+	 * Lightweight sim clock — starts at 8:00am, 1 real second = 1 sim minute.
+	 */
+	private getSimTime(): string {
+		const simMinutes  = Math.floor(this.time.now / 1000);
+		const totalMinutes = (8 * 60 + simMinutes) % (24 * 60);
+		const hours        = Math.floor(totalMinutes / 60);
+		const minutes      = totalMinutes % 60;
+		const period       = hours < 12 ? "am" : "pm";
+		const displayHour  = hours % 12 === 0 ? 12 : hours % 12;
+		const displayMin   = minutes.toString().padStart(2, "0");
+		return `${displayHour}:${displayMin}${period}`;
+	}
+
+	// Agent lifecycle
+
+	private spawnAgent(frontendId: string, name: string, x: number, y: number, backendId: number) {
+		const body  = this.add.circle(x, y, 10, 0x4ade80).setDepth(900);
+		const label = this.add.text(x + 12, y - 10, name, { color: "#ffffff", fontSize: "14px" }).setDepth(900);
+		const statusText = this.add.text(x + 12, y + 6, "idle", { color: "#9ca3af", fontSize: "11px" }).setDepth(900);
+
+		this.agents.set(frontendId, { body, label, statusText, backendId, busy: false, destination: "None", lastAction: "None" });
 		this.updateSidebarAgentStatus();
 	}
 
@@ -699,55 +662,60 @@ export default class townscene extends Phaser.Scene {
 	 * Main agent loop:
 	 * 1. Fetch next action from backend
 	 * 2. Move to target location
-	 * 3. Dwell briefly
-	 * 4. Report arrival to backend
-	 * 5. Repeat
+	 * 3. Dwell
+	 * 4. Report arrival
+	 * 5. Write memory
+	 * 6. Repeat
 	 */
 	private async runAgentLoop(frontendId: string) {
 		const a = this.agents.get(frontendId);
-		if (!a) return;
-	
-		if (a.busy) return;
+		if (!a || a.busy) return;
+
 		a.busy = true;
 		this.updateSidebarAgentStatus();
-	
+
 		try {
+			// 1. Plan
 			const { locationId, description } = await this.fetchNextAction(a.backendId);
 			a.destination = locationId;
-			a.lastAction = description || "Moving";
+			a.lastAction  = description || "Moving";
 			a.statusText.setText(description.length > 24 ? description.slice(0, 22) + "…" : description);
 			this.updateSidebarAgentStatus();
-			this.addEventLog(`${a.label.text} plans to go to ${locationId}: ${description}`);
+			this.addEventLog(`${a.label.text} plans: "${description}" → ${locationId}`);
 
-			await new Promise<void>(resolve => {
-				this.moveAgentAlongPath(frontendId, locationId, resolve);
-			});
-	
-			this.addEventLog(`${a.label.text} arrived at ${locationId}.`);
-	
+			// 2. Walk
+			await new Promise<void>(resolve => this.moveAgentAlongPath(frontendId, locationId, resolve));
+
+			// 3. Dwell
 			await new Promise<void>(resolve => this.time.delayedCall(DWELL_MS, resolve));
-	
+
+			// 4. Report arrival
 			await this.reportArrival(a.backendId, locationId, description);
-	
+
+			// 5. Write memory
+			const simTime      = this.getSimTime();
+			const locationName = locationId.replace("_", " ");
+			const memoryText   = `At ${simTime} I went to the ${locationName}. ${description}`;
+			await this.writeMemory(a.backendId, memoryText, 0.3);
+			this.addEventLog(`${a.label.text} remembered: visiting the ${locationName} at ${simTime}.`);
+
 			a.statusText.setText("idle");
 			a.lastAction = "idle";
+
 		} catch (err) {
 			console.error(`[${frontendId}] agent loop error:`, err);
 			a.statusText.setText("⚠ error");
 			a.lastAction = "error";
-			this.addEventLog(`${a.label.text} hit an error while acting.`);
-	
+			this.addEventLog(`${a.label.text} hit an error.`);
 			await new Promise<void>(resolve => this.time.delayedCall(10_000, resolve));
 		}
-	
+
 		a.busy = false;
 		this.updateSidebarAgentStatus();
-	
 		this.time.delayedCall(500, () => this.runAgentLoop(frontendId));
 	}
 
-
-	// ─── Debug helpers ────────────────────────────────────────────────────────
+	// Debug helpers
 
 	private drawAnchors() {
 		for (const [id, pos] of Object.entries(LOCATIONS)) {
@@ -755,56 +723,53 @@ export default class townscene extends Phaser.Scene {
 			this.add.text(pos.x + 8, pos.y - 10, id, { color: "#ffffff", fontSize: "12px" }).setDepth(1000);
 			dot.setAlpha(0.6);
 		}
-
-		for (const [idx, pos] of Object.entries(SIDEWALK_POINTS)) {
-			const dot = this.add.circle(pos.x, pos.y, 6, 0xffcc00).setDepth(1000);
-			dot.setAlpha(0.4);
+		for (const [, pos] of Object.entries(SIDEWALK_POINTS)) {
+			this.add.circle(pos.x, pos.y, 4, 0xffcc00).setDepth(1000).setAlpha(0.4);
 		}
 	}
 
 	private drawEntrances() {
 		for (const [id, pos] of Object.entries(ENTRANCES)) {
-		  const dot = this.add.circle(pos.x, pos.y, 5, 0x00ffff).setDepth(1100);
-		  this.add.text(pos.x + 8, pos.y + 8, `entry_${id}`, {
-			color: "#00ffff",
-			fontSize: "11px",
-		  }).setDepth(1100);
-		  dot.setAlpha(0.85);
+			const dot = this.add.circle(pos.x, pos.y, 5, 0x00ffff).setDepth(1100);
+			this.add.text(pos.x + 8, pos.y + 8, `entry_${id}`, { color: "#00ffff", fontSize: "11px" }).setDepth(1100);
+			dot.setAlpha(0.85);
 		}
 	}
 
-	// ─── Scene entry point ────────────────────────────────────────────────────
+	// Scene entry point
 
 	async create() {
-	this.editorCreate();
-	this.buildSidewalkGraph();
-	this.drawAnchors();
-	this.createSidebar();
-	this.drawEntrances();
+		this.editorCreate();
+		this.buildSidewalkGraph();
+		this.drawAnchors();
+		this.drawEntrances();
+		this.createSidebar();
 
-	this.events.once("shutdown", () => this.cleanupSidebar());
-	this.events.once("destroy", () => this.cleanupSidebar());
+		// Tick the sim clock display every real second
+		this.time.addEvent({ delay: 1000, loop: true, callback: () => this.updateSimClock() });
 
-	for (const cfg of this.configuredAgents) {
-		const loc = LOCATIONS[cfg.startingPoint];
+		this.events.once("shutdown", () => this.cleanupSidebar());
+		this.events.once("destroy",  () => this.cleanupSidebar());
 
-		try {
-			const backendId = await this.registerAgent(cfg);
-			this.spawnAgent(cfg.id, cfg.name, loc.x, loc.y, backendId);
+		for (const cfg of this.configuredAgents) {
+			const loc = LOCATIONS[cfg.startingPoint];
+			try {
+				const backendId = await this.registerAgent(cfg);
+				this.spawnAgent(cfg.id, cfg.name, loc.x, loc.y, backendId);
 
-			const idx = this.configuredAgents.indexOf(cfg);
-			this.time.delayedCall(idx * 1500, () => this.runAgentLoop(cfg.id));
+				const idx = this.configuredAgents.indexOf(cfg);
+				this.time.delayedCall(idx * 1500, () => this.runAgentLoop(cfg.id));
 
-			this.addEventLog(`${cfg.name} entered the town at ${cfg.startingPoint}.`);
-			console.log(`[${cfg.name}] registered as backend id ${backendId}`);
-		} catch (err) {
-			console.error(`Failed to register ${cfg.name}:`, err);
-			this.addEventLog(`Failed to register ${cfg.name}.`);
+				this.addEventLog(`${cfg.name} entered the town at ${cfg.startingPoint}.`);
+				console.log(`[${cfg.name}] registered as backend id ${backendId}`);
+			} catch (err) {
+				console.error(`Failed to register ${cfg.name}:`, err);
+				this.addEventLog(`Failed to register ${cfg.name}.`);
+			}
 		}
-	}
 
-	this.updateSidebarAgentStatus();
-}
+		this.updateSidebarAgentStatus();
+	}
 
 	/* END-USER-CODE */
 }
