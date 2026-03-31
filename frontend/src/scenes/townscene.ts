@@ -264,6 +264,50 @@ export default class townscene extends Phaser.Scene {
 
 	/* START-USER-CODE */
 
+	// lighting
+	private lightingOverlay!: Phaser.GameObjects.Rectangle;
+
+	private getSimMinutes(): number {
+		const simMinutes = Math.floor(this.time.now / 1000);
+		return (8 * 60 + simMinutes) % (24 * 60);
+	}
+	
+	private getLightingAlpha(totalMinutes: number): number {
+		const hour = totalMinutes / 60;
+	
+		// 6am–8am: sunrise
+		if (hour >= 6 && hour < 8) {
+			return Phaser.Math.Linear(0.45, 0.08, (hour - 6) / 2);
+		}
+	
+		// 8am–5pm: daytime
+		if (hour >= 8 && hour < 17) {
+			return 0.08;
+		}
+	
+		// 5pm–8pm: sunset
+		if (hour >= 17 && hour < 20) {
+			return Phaser.Math.Linear(0.12, 0.4, (hour - 17) / 3);
+		}
+	
+		// 8pm–6am: night
+		return 0.45;
+	}
+	
+	private createLighting() {
+		this.lightingOverlay = this.add.rectangle(640, 360, 1280, 720, 0x0b1020);
+		this.lightingOverlay.setScrollFactor(0);
+		this.lightingOverlay.setDepth(800); // below agents/labels, above town
+		this.lightingOverlay.setAlpha(0.08);
+	}
+	
+	private updateLighting() {
+		if (!this.lightingOverlay) return;
+		const totalMinutes = this.getSimMinutes();
+		const alpha = this.getLightingAlpha(totalMinutes);
+		this.lightingOverlay.setAlpha(alpha);
+	}
+
 	// Sidebar
 
 	private createSidebar() {
@@ -738,9 +782,18 @@ export default class townscene extends Phaser.Scene {
 		this.drawAnchors();
 		this.drawEntrances();
 		this.createSidebar();
+		this.createLighting();
+		this.updateLighting();
 
 		// Tick the sim clock display every real second
-		this.time.addEvent({ delay: 1000, loop: true, callback: () => this.updateSimClock() });
+		this.time.addEvent({
+			delay: 1000,
+			loop: true,
+			callback: () => {
+				this.updateSimClock();
+				this.updateLighting();
+			}
+		});
 
 		this.events.once("shutdown", () => this.cleanupSidebar());
 		this.events.once("destroy",  () => this.cleanupSidebar());
