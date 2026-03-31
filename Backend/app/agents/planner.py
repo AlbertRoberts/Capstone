@@ -9,12 +9,14 @@ import os
 import re
 import requests
 from sqlalchemy.orm import Session
-
+from dotenv import load_dotenv
 from Backend.app.db.models import Agent
 from Backend.app.agents.memory import retrieve_memories, add_memory
 from Backend.app.sim_clock import sim_clock
 
 # ─── Config ───────────────────────────────────────────────────────────────────
+
+load_dotenv()  # Load environment variables from .env file
 
 HF_TOKEN = os.getenv("HF_TOKEN", "")  # set in your environment or .env file
 

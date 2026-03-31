@@ -37,26 +37,26 @@ const SIDEWALK_SEGMENTS = [
 	// top horizontal
 	{ x1: 201, y1: 176, x2: 1085, y2: 176 },
   
-	// middle horizontal left and right only
-	{ x1: 201, y1: 361, x2: 466, y2: 361 },
-	{ x1: 831, y1: 361, x2: 1085, y2: 361 },
-  
 	// bottom horizontal
 	{ x1: 201, y1: 551, x2: 1085, y2: 551 },
   
-	// left vertical
+	// left outer vertical
 	{ x1: 201, y1: 176, x2: 201, y2: 551 },
   
-	// right vertical
+	// middle verticals
+	{ x1: 466, y1: 176, x2: 466, y2: 551 },
+	{ x1: 831, y1: 176, x2: 831, y2: 551 },
+  
+	// right outer vertical
 	{ x1: 1085, y1: 176, x2: 1085, y2: 551 },
   
-	// center bottom lead only
+	// center bottom lead
 	{ x1: 647, y1: 551, x2: 647, y2: 628 },
   
 	// entrance connectors
-	{ x1: 389, y1: 551, x2: 389, y2: 643 },   // tavern
-	{ x1: 799, y1: 551, x2: 799, y2: 646 },   // market
-];
+	{ x1: 389, y1: 551, x2: 389, y2: 643 },
+	{ x1: 799, y1: 551, x2: 799, y2: 646 },
+  ];
 
 function uniquePoints(points: Pt[]): Pt[] {
   const seen = new Set<string>();
@@ -245,17 +245,11 @@ export default class townscene extends Phaser.Scene {
 		tavern.isFilled = true;
 		tavern.fillColor = 4662308;
 
-		const side_middle_left = this.add.rectangle(466, 364, 128, 128);
-		side_middle_left.scaleX = 0.37328872859877876;
-		side_middle_left.scaleY = 3.245378044183737;
-		side_middle_left.angle = 11;
+		const side_middle_left = this.add.rectangle(466, 364, 48, 380);
 		side_middle_left.isFilled = true;
 		side_middle_left.fillColor = 9408399;
 
-		const side_middle_right = this.add.rectangle(831, 365, 128, 128);
-		side_middle_right.scaleX = 0.37328872859877876;
-		side_middle_right.scaleY = 3.245378044183737;
-		side_middle_right.angle = -11;
+		const side_middle_right = this.add.rectangle(831, 364, 48, 380);
 		side_middle_right.isFilled = true;
 		side_middle_right.fillColor = 9408399;
 
