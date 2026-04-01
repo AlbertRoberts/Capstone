@@ -56,3 +56,18 @@ class SimState(BaseModel):
     day_period: str = Field(..., example="morning")
     hour: int
     minute: int
+
+
+class InteractionRequest(BaseModel):
+    agent_a_id: int
+    agent_b_id: int
+    location: str
+    time: Optional[str] = None
+
+
+class InteractionResponse(BaseModel):
+    happened: bool
+    summary: str
+    importance_a: float = Field(..., ge=0.0, le=1.0)
+    importance_b: float = Field(..., ge=0.0, le=1.0)
+    duration_ms: int = Field(..., ge=1000, le=20000)

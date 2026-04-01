@@ -9,11 +9,13 @@ from Backend.app.db.database import SessionLocal, engine, Base
 from Backend.app.db.models import Agent, Memory
 from Backend.app.agents.memory import add_memory, retrieve_memories
 from Backend.app.agents.planner import plan_next_action
+from Backend.app.agents.interaction import generate_interaction
 from Backend.app.sim_clock import sim_clock
 from Backend.app.schema.agent_schemas import (
     AgentCreate, AgentResponse, AgentUpdate,
     MemoryCreate, MemoryResponse,
-    Action, DailyPlan, SimState
+    Action, DailyPlan, SimState,
+    InteractionRequest, InteractionResponse
 )
 
 Base.metadata.create_all(bind=engine)
@@ -32,20 +34,12 @@ def get_db():
 
 @router.get("/simulation/state", response_model=SimState)
 def get_simulation_state():
-    """
-    Returns the current sim time so the frontend can stay in sync.
-    Call this once on load and then poll every ~5 seconds to update the display.
-    """
     return SimState(**sim_clock.get_state())
 
 @router.post("/simulation/reset")
 def reset_simulation():
-    """
-    Resets the sim clock back to 8:00am.
-    Useful for restarting a session without restarting the server.
-    """
     import time
-    sim_clock.start_real_time  = time.time()
+    sim_clock.start_real_time = time.time()
     sim_clock.start_sim_minute = 8 * 60
     return {"message": "Simulation clock reset to 8:00am"}
 
@@ -132,11 +126,10 @@ def get_daily_plan(agent_id: int, db: Session = Depends(get_db)):
         fallback_locations = ["town_hall", "school", "clinic", "cafe", "tavern", "market", "park"]
         pick = random.choice(fallback_locations)
         result = {
-            "action":   f"Walk to the {pick.replace('_', ' ')}",
+            "action": f"Walk to the {pick.replace('_', ' ')}",
             "location": pick,
         }
 
-    # Embed LOCATION in the description so the frontend parser always finds it
     return DailyPlan(
         agent_id=agent_id,
         date=datetime.utcnow(),
@@ -146,3 +139,46 @@ def get_daily_plan(agent_id: int, db: Session = Depends(get_db)):
             )
         ]
     )
+
+
+# ─── Interactions ─────────────────────────────────────────────────────────────
+
+@router.post("/interactions/", response_model=InteractionResponse)
+def create_interaction(req: InteractionRequest, db: Session = Depends(get_db)):
+    agent_a = db.query(Agent).filter(Agent.id == req.agent_a_id).first()
+    agent_b = db.query(Agent).filter(Agent.id == req.agent_b_id).first()
+
+    if not agent_a or not agent_b:
+        raise HTTPException(status_code=404, detail="One or both agents not found")
+
+    try:
+        result = generate_interaction(agent_a, agent_b, req.location, req.time)
+    except Exception as e:
+        logging.warning(f"Interaction generation failed for {req.agent_a_id}/{req.agent_b_id}: {e}")
+        result = {
+            "happened": True,
+            "summary": f"{agent_a.name} and {agent_b.name} briefly chat at the {req.location.replace('_', ' ')}.",
+            "importance_a": 0.3,
+            "importance_b": 0.3,
+            "duration_ms": 4000,
+        }
+
+    if result["happened"]:
+        time_str = req.time or sim_clock.get_time_string()
+        location_nice = req.location.replace("_", " ")
+
+        add_memory(
+            db,
+            agent_a.id,
+            f"At {time_str} I spoke with {agent_b.name} at the {location_nice}. {result['summary']}",
+            result["importance_a"]
+        )
+
+        add_memory(
+            db,
+            agent_b.id,
+            f"At {time_str} I spoke with {agent_a.name} at the {location_nice}. {result['summary']}",
+            result["importance_b"]
+        )
+
+    return InteractionResponse(**result)
