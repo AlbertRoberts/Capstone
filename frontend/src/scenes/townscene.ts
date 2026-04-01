@@ -112,6 +112,21 @@ interface BackendPlan {
 	actions: BackendAction[];
 }
 
+interface BackendInteractionRequest {
+	agent_a_id: number;
+	agent_b_id: number;
+	location: string;
+	time: string;
+}
+
+interface BackendInteractionResponse {
+	happened: boolean;
+	summary: string;
+	importance_a: number;
+	importance_b: number;
+	duration_ms: number;
+}
+
 import type { AgentConfig } from "./StartScene";
 
 /* START OF COMPILED CODE */
@@ -420,7 +435,13 @@ export default class townscene extends Phaser.Scene {
 		busy: boolean;
 		destination: string;
 		lastAction: string;
+		currentLocation: LocationId | null;
+		interactingWith: string | null;
+		lastInteractionAt: number;
 	}>();
+
+	private readonly INTERACTION_DISTANCE = 40;
+	private readonly INTERACTION_COOLDOWN_MS = 15000;
 
 	private sidebarEl: HTMLDivElement | null = null;
 
@@ -585,6 +606,7 @@ export default class townscene extends Phaser.Scene {
 		}
 	
 		agent.destination = locationId;
+		agent.currentLocation = null;
 		agent.lastAction = `Moving to ${locationId}`;
 		agent.busy = true;
 		agent.statusText.setText("walking");
@@ -598,6 +620,7 @@ export default class townscene extends Phaser.Scene {
 	
 			if (i >= cleaned.length) {
 				agent.busy = false;
+				agent.currentLocation = locationId;
 				agent.statusText.setText("idle");
 				agent.lastAction = `Arrived at ${locationId}`;
 				this.updateSidebarAgentStatus();
@@ -628,6 +651,29 @@ export default class townscene extends Phaser.Scene {
 	}
 
 	// Backend API helpers
+
+	private async requestInteraction(
+		agentAId: number,
+		agentBId: number,
+		location: LocationId
+	): Promise<BackendInteractionResponse> {
+		const res = await fetch(`${API_BASE}/interactions/`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				agent_a_id: agentAId,
+				agent_b_id: agentBId,
+				location,
+				time: this.getSimTime()
+			})
+		});
+	
+		if (!res.ok) {
+			throw new Error(`Interaction request failed: ${res.status}`);
+		}
+	
+		return await res.json();
+	}
 
 	private async registerAgent(cfg: AgentConfig): Promise<number> {
 		const res = await fetch(`${API_BASE}/agents/`, {
@@ -683,6 +729,89 @@ export default class townscene extends Phaser.Scene {
 		});
 	}
 
+	// proximity helpers
+
+	private canAgentsInteract(aId: string, bId: string): boolean {
+		const a = this.agents.get(aId);
+		const b = this.agents.get(bId);
+		if (!a || !b) return false;
+		if (aId === bId) return false;
+	
+		if (a.busy || b.busy) return false;
+		if (a.interactingWith || b.interactingWith) return false;
+		if (!a.currentLocation || !b.currentLocation) return false;
+		if (a.currentLocation !== b.currentLocation) return false;
+	
+		const now = this.time.now;
+		if (now - a.lastInteractionAt < this.INTERACTION_COOLDOWN_MS) return false;
+		if (now - b.lastInteractionAt < this.INTERACTION_COOLDOWN_MS) return false;
+	
+		const d = Phaser.Math.Distance.Between(a.body.x, a.body.y, b.body.x, b.body.y);
+		return d <= this.INTERACTION_DISTANCE;
+	}
+	
+	private async startInteraction(aId: string, bId: string) {
+		const a = this.agents.get(aId);
+		const b = this.agents.get(bId);
+		if (!a || !b || !a.currentLocation || !b.currentLocation) return;
+		if (a.currentLocation !== b.currentLocation) return;
+	
+		const location = a.currentLocation;
+	
+		a.interactingWith = bId;
+		b.interactingWith = aId;
+		a.busy = true;
+		b.busy = true;
+		a.statusText.setText("talking");
+		b.statusText.setText("talking");
+		a.lastAction = `Talking to ${b.label.text}`;
+		b.lastAction = `Talking to ${a.label.text}`;
+		a.lastInteractionAt = this.time.now;
+		b.lastInteractionAt = this.time.now;
+		this.updateSidebarAgentStatus();
+	
+		try {
+			const result = await this.requestInteraction(a.backendId, b.backendId, location);
+	
+			if (result.happened) {
+				this.addEventLog(`${a.label.text} and ${b.label.text}: ${result.summary}`);
+				await new Promise<void>(resolve => this.time.delayedCall(result.duration_ms, resolve));
+			} else {
+				await new Promise<void>(resolve => this.time.delayedCall(1000, resolve));
+			}
+		} catch (err) {
+			console.error("Interaction failed:", err);
+			this.addEventLog(`${a.label.text} and ${b.label.text} tried to interact, but the backend errored.`);
+			await new Promise<void>(resolve => this.time.delayedCall(2000, resolve));
+		}
+	
+		a.interactingWith = null;
+		b.interactingWith = null;
+		a.busy = false;
+		b.busy = false;
+		a.statusText.setText("idle");
+		b.statusText.setText("idle");
+		a.lastAction = "idle";
+		b.lastAction = "idle";
+		this.updateSidebarAgentStatus();
+	}
+	
+	private checkAgentProximity() {
+		const ids = Array.from(this.agents.keys());
+	
+		for (let i = 0; i < ids.length; i++) {
+			for (let j = i + 1; j < ids.length; j++) {
+				const aId = ids[i];
+				const bId = ids[j];
+	
+				if (this.canAgentsInteract(aId, bId)) {
+					this.startInteraction(aId, bId);
+					return; // only trigger one pair per cycle
+				}
+			}
+		}
+	}
+
 	/**
 	 * Lightweight sim clock — starts at 8:00am, 1 real second = 1 sim minute.
 	 */
@@ -700,11 +829,23 @@ export default class townscene extends Phaser.Scene {
 	// Agent lifecycle
 
 	private spawnAgent(frontendId: string, name: string, x: number, y: number, backendId: number) {
-		const body  = this.add.circle(x, y, 10, 0x4ade80).setDepth(900);
+		const body = this.add.circle(x, y, 10, 0x4ade80).setDepth(900);
 		const label = this.add.text(x + 12, y - 10, name, { color: "#ffffff", fontSize: "14px" }).setDepth(900);
 		const statusText = this.add.text(x + 12, y + 6, "idle", { color: "#9ca3af", fontSize: "11px" }).setDepth(900);
-
-		this.agents.set(frontendId, { body, label, statusText, backendId, busy: false, destination: "None", lastAction: "None" });
+	
+		this.agents.set(frontendId, {
+			body,
+			label,
+			statusText,
+			backendId,
+			busy: false,
+			destination: "None",
+			lastAction: "None",
+			currentLocation: null,
+			interactingWith: null,
+			lastInteractionAt: 0
+		});
+	
 		this.updateSidebarAgentStatus();
 	}
 
@@ -805,6 +946,13 @@ export default class townscene extends Phaser.Scene {
 				this.updateSimClock();
 				this.updateLighting();
 			}
+		});
+
+		// proximity checks
+		this.time.addEvent({
+			delay: 1000,
+			loop: true,
+			callback: () => this.checkAgentProximity()
 		});
 
 		this.events.once("shutdown", () => this.cleanupSidebar());
