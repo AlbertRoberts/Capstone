@@ -545,18 +545,23 @@ export default class townscene extends Phaser.Scene {
 	private moveAgentAlongPath(frontendId: string, locationId: LocationId, onComplete?: () => void) {
 		const agent = this.agents.get(frontendId);
 		if (!agent) return;
-
+	
 		this.tweens.killTweensOf(agent.body);
 		this.tweens.killTweensOf(agent.label);
 		this.tweens.killTweensOf(agent.statusText);
-
-		const destination = ENTRANCES[locationId];
-		const startSide   = this.closestSidewalkPoint(agent.body.x, agent.body.y);
-		const endSide     = this.closestSidewalkPoint(destination.x, destination.y);
-		const keyPath     = this.aStar(this.keyOf(startSide), this.keyOf(endSide));
-
-		const route: Pt[] = [startSide];
-
+	
+		const entrance = ENTRANCES[locationId];
+		const finalDestination = LOCATIONS[locationId];
+	
+		const startSide = this.closestSidewalkPoint(agent.body.x, agent.body.y);
+		const endSide = this.closestSidewalkPoint(entrance.x, entrance.y);
+		const keyPath = this.aStar(this.keyOf(startSide), this.keyOf(endSide));
+	
+		const route: Pt[] = [];
+	
+		// Start from exact current position only if already near sidewalk.
+		route.push({ x: agent.body.x, y: agent.body.y });
+	
 		if (keyPath && keyPath.length > 0) {
 			for (const k of keyPath) {
 				const p = this.sidewalkByKey.get(k);
@@ -565,25 +570,32 @@ export default class townscene extends Phaser.Scene {
 		} else {
 			route.push(endSide);
 		}
-		route.push(destination);
-
+	
+		// Go to building entrance first
+		route.push(entrance);
+	
+		// Then go into the building / destination anchor
+		// For park, entrance and location may be close enough already, but this is fine.
+		route.push(finalDestination);
+	
 		const cleaned: Pt[] = [];
 		for (const p of route) {
 			const prev = cleaned[cleaned.length - 1];
 			if (!prev || prev.x !== p.x || prev.y !== p.y) cleaned.push(p);
 		}
-
+	
 		agent.destination = locationId;
-		agent.lastAction  = `Moving to ${locationId}`;
-		agent.busy        = true;
+		agent.lastAction = `Moving to ${locationId}`;
+		agent.busy = true;
 		agent.statusText.setText("walking");
 		this.updateSidebarAgentStatus();
-
-		const SPEED = 140; // pixels per second
+	
+		const SPEED = 140;
 		let i = 0;
-
+	
 		const step = () => {
 			i += 1;
+	
 			if (i >= cleaned.length) {
 				agent.busy = false;
 				agent.statusText.setText("idle");
@@ -592,17 +604,17 @@ export default class townscene extends Phaser.Scene {
 				onComplete?.();
 				return;
 			}
-
-			const to     = cleaned[i];
-			const from   = { x: agent.body.x, y: agent.body.y };
+	
+			const to = cleaned[i];
+			const from = { x: agent.body.x, y: agent.body.y };
 			const segLen = Phaser.Math.Distance.Between(from.x, from.y, to.x, to.y);
-
+	
 			this.tweens.add({
-				targets:  agent.body,
-				x:        to.x,
-				y:        to.y,
+				targets: agent.body,
+				x: to.x,
+				y: to.y,
 				duration: (segLen / SPEED) * 1000,
-				ease:     "Linear",
+				ease: "Linear",
 				onUpdate: () => {
 					agent.label.setPosition(agent.body.x + 12, agent.body.y - 10);
 					agent.statusText.setPosition(agent.body.x + 12, agent.body.y + 6);
@@ -610,7 +622,7 @@ export default class townscene extends Phaser.Scene {
 				onComplete: step,
 			});
 		};
-
+	
 		this.addEventLog(`${agent.label.text} started moving to ${locationId}.`);
 		step();
 	}
