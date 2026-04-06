@@ -2,7 +2,7 @@
 
 // anchor points for the locations in the town, used for navigation and interaction
 
-type LocationId =
+type PublicLocationId =
   | "town_hall"
   | "school"
   | "clinic"
@@ -11,9 +11,23 @@ type LocationId =
   | "market"
   | "park";
 
+type HouseId =
+  | "house_1"
+  | "house_2"
+  | "house_3"
+  | "house_4"
+  | "house_5"
+  | "house_6"
+  | "house_7"
+  | "house_8"
+  | "house_9"
+  | "house_10";
+
+type LocationId = PublicLocationId | HouseId;
+
 type Pt = { x: number; y: number };
 
-const LOCATIONS: Record<LocationId, Pt> = {
+const PUBLIC_LOCATIONS: Record<PublicLocationId, Pt> = {
   town_hall: { x: 647, y: 369 },
   school: { x: 317, y: 363 },
   clinic: { x: 977, y: 268 },
@@ -23,7 +37,25 @@ const LOCATIONS: Record<LocationId, Pt> = {
   park: { x: 1102, y: 652 },
 };
 
-const ENTRANCES: Record<LocationId, Pt> = {
+const HOUSE_LOCATIONS: Record<HouseId, Pt> = {
+  house_1: { x: 85, y: 545 },
+  house_2: { x: 82, y: 378 },
+  house_3: { x: 79, y: 218 },
+  house_4: { x: 305, y: 66 },
+  house_5: { x: 481, y: 66 },
+  house_6: { x: 668, y: 66 },
+  house_7: { x: 852, y: 66 },
+  house_8: { x: 1019, y: 66 },
+  house_9: { x: 1209, y: 224 },
+  house_10: { x: 1212, y: 372 },
+};
+
+const LOCATIONS: Record<LocationId, Pt> = {
+  ...PUBLIC_LOCATIONS,
+  ...HOUSE_LOCATIONS,
+};
+
+const PUBLIC_ENTRANCES: Record<PublicLocationId, Pt> = {
   town_hall: { x: 647, y: 551 },
   school: { x: 201, y: 363 },
   clinic: { x: 1085, y: 268 },
@@ -32,6 +64,34 @@ const ENTRANCES: Record<LocationId, Pt> = {
   market: { x: 799, y: 551 },
   park: { x: 1085, y: 551 },
 };
+
+const HOUSE_ENTRANCES: Record<HouseId, Pt> = {
+  house_1: { x: 201, y: 545 },
+  house_2: { x: 201, y: 378 },
+  house_3: { x: 201, y: 218 },
+  house_4: { x: 305, y: 176 },
+  house_5: { x: 481, y: 176 },
+  house_6: { x: 668, y: 176 },
+  house_7: { x: 852, y: 176 },
+  house_8: { x: 1019, y: 176 },
+  house_9: { x: 1085, y: 224 },
+  house_10: { x: 1085, y: 372 },
+};
+
+const ENTRANCES: Record<LocationId, Pt> = {
+  ...PUBLIC_ENTRANCES,
+  ...HOUSE_ENTRANCES,
+};
+
+const PUBLIC_LOCATION_IDS: PublicLocationId[] = [
+  "town_hall",
+  "school",
+  "clinic",
+  "cafe",
+  "tavern",
+  "market",
+  "park",
+];
 
 const SIDEWALK_SEGMENTS = [
 	// top horizontal
@@ -50,12 +110,26 @@ const SIDEWALK_SEGMENTS = [
 	// right outer vertical
 	{ x1: 1085, y1: 176, x2: 1085, y2: 551 },
   
-	// center bottom lead
-	{ x1: 647, y1: 551, x2: 647, y2: 628 },
+	// public building connectors
+	{ x1: 647, y1: 551, x2: 647, y2: 369 },   // town_hall
+	{ x1: 201, y1: 363, x2: 317, y2: 363 },   // school
+	{ x1: 1085, y1: 268, x2: 977, y2: 268 },  // clinic
+	{ x1: 977, y1: 551, x2: 977, y2: 450 },   // cafe
+	{ x1: 389, y1: 551, x2: 389, y2: 643 },   // tavern
+	{ x1: 799, y1: 551, x2: 799, y2: 646 },   // market
+	{ x1: 1085, y1: 551, x2: 1102, y2: 652 }, // park
   
-	// entrance connectors
-	{ x1: 389, y1: 551, x2: 389, y2: 643 },
-	{ x1: 799, y1: 551, x2: 799, y2: 646 },
+	// house connectors
+	{ x1: 201, y1: 545, x2: 85, y2: 545 },    // house_1
+	{ x1: 201, y1: 378, x2: 82, y2: 378 },    // house_2
+	{ x1: 201, y1: 218, x2: 79, y2: 218 },    // house_3
+	{ x1: 305, y1: 176, x2: 305, y2: 66 },    // house_4
+	{ x1: 481, y1: 176, x2: 481, y2: 66 },    // house_5
+	{ x1: 668, y1: 176, x2: 668, y2: 66 },    // house_6
+	{ x1: 852, y1: 176, x2: 852, y2: 66 },    // house_7
+	{ x1: 1019, y1: 176, x2: 1019, y2: 66 },  // house_8
+	{ x1: 1085, y1: 224, x2: 1209, y2: 224 }, // house_9
+	{ x1: 1085, y1: 372, x2: 1212, y2: 372 }, // house_10
   ];
 
 function uniquePoints(points: Pt[]): Pt[] {
@@ -579,8 +653,6 @@ export default class townscene extends Phaser.Scene {
 		const keyPath = this.aStar(this.keyOf(startSide), this.keyOf(endSide));
 	
 		const route: Pt[] = [];
-	
-		// Start from exact current position only if already near sidewalk.
 		route.push({ x: agent.body.x, y: agent.body.y });
 	
 		if (keyPath && keyPath.length > 0) {
@@ -592,11 +664,7 @@ export default class townscene extends Phaser.Scene {
 			route.push(endSide);
 		}
 	
-		// Go to building entrance first
 		route.push(entrance);
-	
-		// Then go into the building / destination anchor
-		// For park, entrance and location may be close enough already, but this is fine.
 		route.push(finalDestination);
 	
 		const cleaned: Pt[] = [];
@@ -679,10 +747,11 @@ export default class townscene extends Phaser.Scene {
 		const res = await fetch(`${API_BASE}/agents/`, {
 			method:  "POST",
 			headers: { "Content-Type": "application/json" },
-			body:    JSON.stringify({
-				name:           cfg.name,
-				personality:    cfg.personalityPrompt,
-				location:       cfg.startingPoint,
+			body: JSON.stringify({
+				name: cfg.name,
+				personality: cfg.personalityPrompt,
+				location: cfg.startingPoint,
+				home_location: cfg.startingPoint,
 				current_action: "idle",
 			}),
 		});

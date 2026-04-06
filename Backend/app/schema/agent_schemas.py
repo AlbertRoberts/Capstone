@@ -8,6 +8,7 @@ class AgentBase(BaseModel):
     personality: Optional[str] = Field(None, example="Curious and friendly")
     location: Optional[str] = Field(None, example="park")
     current_action: Optional[str] = Field(None, example="Walking to the cafe")
+    home_location: Optional[str] = Field(None, example="house_3")
 
 class AgentCreate(AgentBase):
     pass
@@ -16,6 +17,7 @@ class AgentUpdate(BaseModel):
     personality: Optional[str] = None
     location: Optional[str] = None
     current_action: Optional[str] = None
+    home_location: Optional[str] = None
 
 class AgentResponse(AgentBase):
     id: int
@@ -51,7 +53,6 @@ class DailyPlan(BaseModel):
 
 
 class SimState(BaseModel):
-    """Current simulation clock state — returned by GET /simulation/state"""
     time: str = Field(..., example="9:04am")
     day_period: str = Field(..., example="morning")
     hour: int

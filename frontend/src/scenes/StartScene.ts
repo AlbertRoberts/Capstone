@@ -9,13 +9,16 @@
 import Phaser from "phaser";
 
 type StartingLocation =
-  | "town_hall"
-  | "school"
-  | "clinic"
-  | "cafe"
-  | "tavern"
-  | "market"
-  | "park";
+  | "house_1"
+  | "house_2"
+  | "house_3"
+  | "house_4"
+  | "house_5"
+  | "house_6"
+  | "house_7"
+  | "house_8"
+  | "house_9"
+  | "house_10";
 
 export type AgentConfig = {
   id: string;
@@ -136,13 +139,16 @@ export default class StartScene extends Phaser.Scene {
         class="agent-start"
         style="padding:10px; border-radius:6px; border:1px solid #4b5563; background:#1f2937; color:white;"
       >
-        <option value="town_hall">Town Hall</option>
-        <option value="school">School</option>
-        <option value="clinic">Clinic</option>
-        <option value="cafe">Cafe</option>
-        <option value="tavern">Tavern</option>
-        <option value="market">Market</option>
-        <option value="park">Park</option>
+        <option value="house_1">House 1</option>
+        <option value="house_2">House 2</option>
+        <option value="house_3">House 3</option>
+        <option value="house_4">House 4</option>
+        <option value="house_5">House 5</option>
+        <option value="house_6">House 6</option>
+        <option value="house_7">House 7</option>
+        <option value="house_8">House 8</option>
+        <option value="house_9">House 9</option>
+        <option value="house_10">House 10</option>
       </select>
 
       <textarea
