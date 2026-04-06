@@ -30,8 +30,6 @@ def get_db():
         db.close()
 
 
-# ─── Simulation clock ─────────────────────────────────────────────────────────
-
 @router.get("/simulation/state", response_model=SimState)
 def get_simulation_state():
     return SimState(**sim_clock.get_state())
@@ -44,15 +42,14 @@ def reset_simulation():
     return {"message": "Simulation clock reset to 8:00am"}
 
 
-# ─── Agents ───────────────────────────────────────────────────────────────────
-
 @router.post("/agents/", response_model=AgentResponse)
 def create_agent(agent: AgentCreate, db: Session = Depends(get_db)):
     db_agent = Agent(
         name=agent.name,
         personality=agent.personality,
         location=agent.location,
-        current_action=agent.current_action
+        current_action=agent.current_action,
+        home_location=agent.home_location,
     )
     db.add(db_agent)
     db.commit()
@@ -84,8 +81,6 @@ def update_agent(agent_id: int, agent_update: AgentUpdate, db: Session = Depends
     return agent
 
 
-# ─── Memory ───────────────────────────────────────────────────────────────────
-
 @router.post("/agents/{agent_id}/memory", response_model=MemoryResponse)
 def create_memory(agent_id: int, memory: MemoryCreate, db: Session = Depends(get_db)):
     agent = db.query(Agent).filter(Agent.id == agent_id).first()
@@ -111,8 +106,6 @@ def get_memories(agent_id: int, query: str = "", db: Session = Depends(get_db)):
         return db.query(Memory).filter(Memory.agent_id == agent_id).all()
 
 
-# ─── Planning ─────────────────────────────────────────────────────────────────
-
 @router.get("/agents/{agent_id}/plan", response_model=DailyPlan)
 def get_daily_plan(agent_id: int, db: Session = Depends(get_db)):
     agent = db.query(Agent).filter(Agent.id == agent_id).first()
@@ -123,10 +116,21 @@ def get_daily_plan(agent_id: int, db: Session = Depends(get_db)):
         result = plan_next_action(agent, db)
     except Exception as e:
         logging.warning(f"Planner failed for agent {agent_id}: {e}")
-        fallback_locations = ["town_hall", "school", "clinic", "cafe", "tavern", "market", "park"]
+        fallback_locations = [
+            "town_hall", "school", "clinic", "cafe", "tavern", "market", "park"
+        ]
+        if agent.home_location:
+            fallback_locations.append(agent.home_location)
+
         pick = random.choice(fallback_locations)
+        action_text = (
+            f"Go home to {pick.replace('_', ' ')}"
+            if pick.startswith("house_")
+            else f"Walk to the {pick.replace('_', ' ')}"
+        )
+
         result = {
-            "action": f"Walk to the {pick.replace('_', ' ')}",
+            "action": action_text,
             "location": pick,
         }
 
@@ -140,8 +144,6 @@ def get_daily_plan(agent_id: int, db: Session = Depends(get_db)):
         ]
     )
 
-
-# ─── Interactions ─────────────────────────────────────────────────────────────
 
 @router.post("/interactions/", response_model=InteractionResponse)
 def create_interaction(req: InteractionRequest, db: Session = Depends(get_db)):

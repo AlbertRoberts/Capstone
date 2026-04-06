@@ -1,8 +1,5 @@
 """
 planner.py — LLM-driven action planner for agents.
-
-Uses the Hugging Face Inference API to generate the next action for an agent,
-grounded in their personality, current location, and recent memories.
 """
 
 import os
@@ -14,24 +11,17 @@ from Backend.app.db.models import Agent
 from Backend.app.agents.memory import retrieve_memories, add_memory
 from Backend.app.sim_clock import sim_clock
 
-# ─── Config ───────────────────────────────────────────────────────────────────
+load_dotenv()
 
-load_dotenv()  # Load environment variables from .env file
-
-HF_TOKEN = os.getenv("HF_TOKEN", "")  # set in your environment or .env file
-
-# Swap this URL for any other HF instruction model you want to try:
-# - "mistralai/Mistral-7B-Instruct-v0.3"
-# - "microsoft/Phi-3-mini-4k-instruct"
-# - "meta-llama/Meta-Llama-3.2-3B-Instruct"  (requires HF access approval)
+HF_TOKEN = os.getenv("HF_TOKEN", "")
 HF_MODEL = os.getenv(
     "HF_MODEL",
     "meta-llama/Llama-3.1-8B-Instruct"
 )
 
-API_URL = f"https://router.huggingface.co/v1/chat/completions"
+API_URL = "https://router.huggingface.co/v1/chat/completions"
 
-VALID_LOCATIONS = [
+PUBLIC_LOCATIONS = [
     "town_hall",
     "school",
     "clinic",
@@ -41,7 +31,26 @@ VALID_LOCATIONS = [
     "park",
 ]
 
-# ─── Prompt builder ───────────────────────────────────────────────────────────
+HOUSE_LOCATIONS = [
+    "house_1",
+    "house_2",
+    "house_3",
+    "house_4",
+    "house_5",
+    "house_6",
+    "house_7",
+    "house_8",
+    "house_9",
+    "house_10",
+]
+
+
+def _valid_locations_for(agent: Agent) -> list[str]:
+    valid = list(PUBLIC_LOCATIONS)
+    if agent.home_location and agent.home_location in HOUSE_LOCATIONS:
+        valid.append(agent.home_location)
+    return valid
+
 
 def _build_prompt(agent: Agent, memories: list[str]) -> str:
     memory_block = (
@@ -50,9 +59,12 @@ def _build_prompt(agent: Agent, memories: list[str]) -> str:
         else "- No memories yet."
     )
 
-    location_list = ", ".join(VALID_LOCATIONS)
-    sim_time   = sim_clock.get_time_string()
+    valid_locations = _valid_locations_for(agent)
+    location_list = ", ".join(valid_locations)
+    sim_time = sim_clock.get_time_string()
     day_period = sim_clock.get_day_period()
+
+    home_text = agent.home_location or "None"
 
     return f"""<s>[INST]
 You are roleplaying as {agent.name}, a resident of a small town.
@@ -61,16 +73,22 @@ Personality and behavior rules (follow these exactly):
 {agent.personality or "An average town resident."}
 
 Current location: {agent.location or "town_hall"}
+Home location: {home_text}
 Current time: {sim_time} ({day_period})
 
 Recent memories:
 {memory_block}
 
-It is {day_period}. Based on your personality and the time of day, decide what {agent.name} does next.
-Consider: people visit the cafe or market in the morning, town_hall or school during the day,
-the park in the afternoon, and the tavern in the evening.
-If your personality says you stay somewhere, you MUST pick that location.
-If your personality says you avoid somewhere, you MUST NOT pick it.
+It is {day_period}. Decide what {agent.name} does next.
+
+Behavior guidance:
+- In the morning, they may go to the cafe or market.
+- During the day, they may go to town_hall, school, clinic, or park.
+- In the evening, they may go to tavern or return home.
+- If they are tired, private, shy, resting, or home-oriented, they may stay home or go home.
+- If their personality says they prefer staying home, respect that.
+- If their personality says they avoid somewhere, do not send them there.
+- They may choose their home location if it is in the valid locations list.
 
 Valid locations: {location_list}
 
@@ -79,8 +97,6 @@ ACTION: <one sentence describing what {agent.name} does>
 LOCATION: <one location from the valid list above>
 [/INST]"""
 
-
-# ─── LLM call ─────────────────────────────────────────────────────────────────
 
 def _call_hf(prompt: str) -> str:
     if not HF_TOKEN:
@@ -105,13 +121,7 @@ def _call_hf(prompt: str) -> str:
     return data["choices"][0]["message"]["content"]
 
 
-# ─── Response parser ──────────────────────────────────────────────────────────
-
-def _parse_response(text: str) -> dict[str, str]:
-    """
-    Extract ACTION and LOCATION from the model's response.
-    Falls back gracefully if the model doesn't follow the format exactly.
-    """
+def _parse_response(text: str, valid_locations: list[str]) -> dict[str, str]:
     action = ""
     location = ""
 
@@ -121,64 +131,44 @@ def _parse_response(text: str) -> dict[str, str]:
             action = line[7:].strip()
         elif line.upper().startswith("LOCATION:"):
             raw_loc = line[9:].strip().lower()
-            # Normalise: "Town Hall" -> "town_hall", "the cafe" -> "cafe"
             raw_loc = raw_loc.replace("the ", "").replace(" ", "_")
-            # Only accept known locations
-            if raw_loc in VALID_LOCATIONS:
+            if raw_loc in valid_locations:
                 location = raw_loc
 
-    # If the model ignored the format, scan the whole text for any location keyword
     if not location:
-        for loc in VALID_LOCATIONS:
+        for loc in valid_locations:
             pattern = loc.replace("_", r"[\s_]")
             if re.search(pattern, text, re.IGNORECASE):
                 location = loc
                 break
 
-    # Final fallback
     if not location:
-        import random
-        location = random.choice(VALID_LOCATIONS)
+        location = valid_locations[0]
 
     if not action:
-        action = f"Walk to the {location.replace('_', ' ')}"
+        if location.startswith("house_"):
+            action = f"Go home to {location.replace('_', ' ')}"
+        else:
+            action = f"Walk to the {location.replace('_', ' ')}"
 
     return {"action": action, "location": location}
 
 
-# ─── Public API ───────────────────────────────────────────────────────────────
-
 def plan_next_action(agent: Agent, db: Session) -> dict[str, str]:
-    """
-    Generate the next action for an agent.
-
-    Returns:
-        {
-            "action":   "Alice heads to the cafe for a morning coffee.",
-            "location": "cafe"
-        }
-
-    Also writes the planned action to the agent's memory so future
-    plans are informed by what they've already done.
-    """
-
-    # Retrieve the agent's most relevant recent memories
     query = f"What should {agent.name} do next in {agent.location}?"
     raw_memories = retrieve_memories(agent.id, query, k=5)
 
-    # ChromaDB returns {"documents": [["mem1", "mem2", ...]], ...}
     memory_texts: list[str] = []
     if raw_memories and raw_memories.get("documents"):
         docs = raw_memories["documents"]
         if docs and isinstance(docs[0], list):
             memory_texts = docs[0]
 
-    # Build prompt and call the model
+    valid_locations = _valid_locations_for(agent)
     prompt = _build_prompt(agent, memory_texts)
     raw_text = _call_hf(prompt)
-    result = _parse_response(raw_text)
+    result = _parse_response(raw_text, valid_locations)
 
-    # Write this plan as a memory so the agent remembers where they went
     memory_content = (
         f"I decided to go to {result['location'].replace('_', ' ')}. "
         f"{result['action']}"

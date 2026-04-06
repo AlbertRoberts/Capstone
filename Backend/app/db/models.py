@@ -10,6 +10,7 @@ class Agent(Base):
     personality = Column(Text)
     current_action = Column(String)
     location = Column(String)
+    home_location = Column(String)   # NEW
 
 
 class Memory(Base):
