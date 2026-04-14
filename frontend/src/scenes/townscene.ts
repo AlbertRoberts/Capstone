@@ -185,6 +185,12 @@ interface BackendInteractionResponse {
   duration_ms:  number;
 }
 
+interface BackendAskResponse {
+  agent_name: string;
+  question:   string;
+  answer:     string;
+}
+
 // BackendClient  — all API calls
 
 class BackendClient {
@@ -228,6 +234,15 @@ class BackendClient {
       location,
       time:       simTime,
     });
+    return res.json();
+  }
+
+  async setSpeed(speed: number): Promise<void> {
+    await this.post("/simulation/speed", { speed });
+  }
+
+  async askAgent(agentId: number, question: string): Promise<BackendAskResponse> {
+    const res = await this.post(`/agents/${agentId}/ask`, { question });
     return res.json();
   }
 
@@ -454,8 +469,16 @@ class Agent {
 
 // Sidebar — owns all DOM interaction
 
+type SpeedLevel = 0 | 1 | 2 | 4;
+
 class Sidebar {
   private readonly el: HTMLDivElement;
+  private currentSpeed: SpeedLevel = 1;
+  onSpeedChange: ((speed: SpeedLevel) => void) | null = null;
+  onAskAgent:    ((agentId: number, question: string) => Promise<string>) | null = null;
+
+  // agent list for the ask dropdown (backendId → displayName)
+  private agentOptions: { id: number; name: string }[] = [];
 
   constructor() {
     this.el = document.createElement("div");
@@ -477,27 +500,166 @@ class Sidebar {
 
     this.el.innerHTML = `
       <h2 style="margin-top:0;">Town Status</h2>
-      <div style="margin-bottom:12px; color:#9ca3af; font-size:13px;">
-        Sim time: <span id="sim-clock">8:00am</span>
+
+      <!-- Clock + speed controls -->
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+        <span style="color:#9ca3af; font-size:13px;">
+          🕐 <span id="sim-clock">8:00am</span>
+        </span>
+        <div id="speed-controls" style="display:flex; gap:4px; margin-left:auto;">
+          <button data-speed="0"  id="spd-0" title="Pause">⏸</button>
+          <button data-speed="1"  id="spd-1" title="1× speed">▶</button>
+          <button data-speed="2"  id="spd-2" title="2× speed">▶▶</button>
+          <button data-speed="4"  id="spd-4" title="4× speed">▶▶▶</button>
+        </div>
       </div>
+
+      <!-- Agent status -->
       <div id="agent-status-section">
-        <h3>Agents</h3>
+        <h3 style="margin:0 0 8px;">Agents</h3>
         <div id="agent-status-list"></div>
       </div>
+
       <hr style="margin:16px 0; border-color:#374151;" />
+
+      <!-- Ask an agent -->
+      <div id="ask-section">
+        <h3 style="margin:0 0 8px;">Ask an Agent</h3>
+        <select id="ask-agent-select" style="
+          width:100%; padding:6px; margin-bottom:6px;
+          background:#1f2937; color:white; border:1px solid #374151; border-radius:4px;
+        ">
+          <option value="">— select agent —</option>
+        </select>
+        <div style="display:flex; gap:6px; margin-bottom:6px;">
+          <input id="ask-input" type="text" placeholder="Type your question…" style="
+            flex:1; padding:6px; background:#1f2937; color:white;
+            border:1px solid #374151; border-radius:4px; font-size:13px;
+          "/>
+          <button id="ask-submit" style="
+            padding:6px 10px; background:#3b82f6; color:white;
+            border:none; border-radius:4px; cursor:pointer; font-size:13px;
+          ">Ask</button>
+        </div>
+        <div id="ask-response" style="
+          min-height:40px; padding:8px; background:#111827;
+          border:1px solid #374151; border-radius:4px; font-size:13px;
+          color:#d1d5db; white-space:pre-wrap; display:none;
+        "></div>
+      </div>
+
+      <hr style="margin:16px 0; border-color:#374151;" />
+
+      <!-- Event log -->
       <div id="event-log-section">
-        <h3>Event Log</h3>
+        <h3 style="margin:0 0 8px;">Event Log</h3>
         <div id="event-log-list" style="display:flex; flex-direction:column; gap:8px;"></div>
       </div>
     `;
 
     document.body.appendChild(this.el);
+    this._styleSpeedButtons();
+    this._attachSpeedListeners();
+    this._attachAskListeners();
   }
+
+  // ── speed controls ────────────────────────────────────────
+
+  private _styleSpeedButtons() {
+    this.el.querySelectorAll<HTMLButtonElement>("#speed-controls button").forEach(btn => {
+      Object.assign(btn.style, {
+        padding:      "4px 8px",
+        background:   "#374151",
+        color:        "white",
+        border:       "1px solid #4b5563",
+        borderRadius: "4px",
+        cursor:       "pointer",
+        fontSize:     "12px",
+        fontFamily:   "monospace",
+      });
+    });
+    this._highlightSpeed(this.currentSpeed);
+  }
+
+  private _highlightSpeed(speed: SpeedLevel) {
+    this.el.querySelectorAll<HTMLButtonElement>("#speed-controls button").forEach(btn => {
+      const active = Number(btn.dataset.speed) === speed;
+      btn.style.background  = active ? "#2563eb" : "#374151";
+      btn.style.borderColor = active ? "#3b82f6" : "#4b5563";
+    });
+  }
+
+  private _attachSpeedListeners() {
+    this.el.querySelectorAll<HTMLButtonElement>("#speed-controls button").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const speed = Number(btn.dataset.speed) as SpeedLevel;
+        this.currentSpeed = speed;
+        this._highlightSpeed(speed);
+        this.onSpeedChange?.(speed);
+      });
+    });
+  }
+
+  setSpeed(speed: SpeedLevel) {
+    this.currentSpeed = speed;
+    this._highlightSpeed(speed);
+  }
+
+  // ── ask-agent panel ───────────────────────────────────────
+
+  private _attachAskListeners() {
+    const btn   = this.el.querySelector<HTMLButtonElement>("#ask-submit")!;
+    const input = this.el.querySelector<HTMLInputElement>("#ask-input")!;
+
+    const submit = async () => {
+      const select   = this.el.querySelector<HTMLSelectElement>("#ask-agent-select")!;
+      const agentId  = Number(select.value);
+      const question = input.value.trim();
+      if (!agentId || !question) return;
+
+      const respEl = this.el.querySelector<HTMLDivElement>("#ask-response")!;
+      respEl.style.display = "block";
+      respEl.textContent   = "Thinking…";
+      btn.disabled         = true;
+
+      try {
+        const answer = await this.onAskAgent?.(agentId, question) ?? "No response.";
+        const name   = this.agentOptions.find(a => a.id === agentId)?.name ?? "Agent";
+        respEl.textContent = `${name}: "${answer}"`;
+      } catch {
+        respEl.textContent = "Failed to get a response.";
+      } finally {
+        btn.disabled = false;
+      }
+    };
+
+    btn.addEventListener("click", submit);
+    input.addEventListener("keydown", e => { if (e.key === "Enter") submit(); });
+  }
+
+  updateAgentOptions(agents: { id: number; name: string }[]) {
+    this.agentOptions = agents;
+    const select = this.el.querySelector<HTMLSelectElement>("#ask-agent-select");
+    if (!select) return;
+    const current = select.value;
+    select.innerHTML = `<option value="">— select agent —</option>`;
+    for (const a of agents) {
+      const opt      = document.createElement("option");
+      opt.value      = String(a.id);
+      opt.textContent = a.name;
+      select.appendChild(opt);
+    }
+    select.value = current; // restore selection if still valid
+  }
+
+  // ── clock ─────────────────────────────────────────────────
 
   updateClock(simTime: string) {
     const el = this.el.querySelector<HTMLSpanElement>("#sim-clock");
     if (el) el.textContent = simTime;
   }
+
+  // ── agent status ──────────────────────────────────────────
 
   renderAgents(agents: Agent[]) {
     const list = this.el.querySelector<HTMLDivElement>("#agent-status-list");
@@ -522,6 +684,8 @@ class Sidebar {
       list.appendChild(row);
     }
   }
+
+  // ── event log ─────────────────────────────────────────────
 
   addEventLog(simTime: string, message: string) {
     const log = this.el.querySelector<HTMLDivElement>("#event-log-list");
@@ -580,6 +744,14 @@ export default class TownScene extends Phaser.Scene {
   private client:  BackendClient | null = null;
   private lightingOverlay!: Phaser.GameObjects.Rectangle;
 
+  // ── sim-time tracking (speed-aware) ───────────────────────
+  /** Accumulated sim-minutes up to the last speed change. */
+  private simAccuMinutes = 8 * 60;       // start at 8:00am
+  /** Real wall-clock timestamp (ms) of the last speed change. */
+  private simLastRealMs  = Date.now();
+  /** Current speed multiplier (sim-minutes per real second). */
+  private simSpeed: SpeedLevel = 1;
+
   // ── scene lifecycle ───────────────────────────────────────
 
   async create() {
@@ -588,6 +760,14 @@ export default class TownScene extends Phaser.Scene {
     this.graph  = new SidewalkGraph();
     this.client = new BackendClient(API_BASE);
     this.sidebar = new Sidebar();
+
+    // Wire up sidebar callbacks
+    this.sidebar.onSpeedChange = (speed) => this.setSimSpeed(speed);
+    this.sidebar.onAskAgent    = async (agentId, question) => {
+      const res = await this.client!.askAgent(agentId, question);
+      this.log(`[Q&A] ${res.agent_name} was asked: "${res.question}"`);
+      return res.answer;
+    };
 
     this.createLighting();
     this.updateLighting();
@@ -636,6 +816,9 @@ export default class TownScene extends Phaser.Scene {
     }
 
     this.sidebar.renderAgents(Array.from(this.agents.values()));
+    this.sidebar.updateAgentOptions(
+      Array.from(this.agents.values()).map(a => ({ id: a.backendId, name: a.displayName }))
+    );
   }
 
   // ── agent loop ────────────────────────────────────────────
@@ -897,10 +1080,6 @@ export default class TownScene extends Phaser.Scene {
     this.lightingOverlay.setAlpha(this.getLightingAlpha(this.getSimMinutes()));
   }
 
-  private getSimMinutes(): number {
-    return (8 * 60 + Math.floor(this.time.now / 1_000)) % (24 * 60);
-  }
-
   private getLightingAlpha(totalMinutes: number): number {
     const h = totalMinutes / 60;
     if (h >= 6  && h < 8)  return Phaser.Math.Linear(0.45, 0.08, (h - 6)  / 2);
@@ -911,6 +1090,11 @@ export default class TownScene extends Phaser.Scene {
 
   // ── sim clock ─────────────────────────────────────────────
 
+  private getSimMinutes(): number {
+    const elapsed = (Date.now() - this.simLastRealMs) / 1_000; // real seconds
+    return Math.floor(this.simAccuMinutes + elapsed * this.simSpeed) % (24 * 60);
+  }
+
   private getSimTime(): string {
     const total       = this.getSimMinutes();
     const hours       = Math.floor(total / 60);
@@ -918,6 +1102,20 @@ export default class TownScene extends Phaser.Scene {
     const period      = hours < 12 ? "am" : "pm";
     const displayHour = hours % 12 === 0 ? 12 : hours % 12;
     return `${displayHour}:${minutes.toString().padStart(2, "0")}${period}`;
+  }
+
+  private setSimSpeed(speed: SpeedLevel) {
+    // Snapshot current sim minutes before changing speed
+    this.simAccuMinutes = this.getSimMinutes();
+    this.simLastRealMs  = Date.now();
+    this.simSpeed       = speed;
+
+    // Scale Phaser's timer and tween systems (0 = full pause)
+    this.time.timeScale   = speed === 0 ? 0 : speed;
+    this.tweens.timeScale = speed === 0 ? 0 : speed;
+
+    // Sync backend (fire-and-forget)
+    this.client?.setSpeed(speed).catch(console.error);
   }
 
   // ── helpers ───────────────────────────────────────────────
