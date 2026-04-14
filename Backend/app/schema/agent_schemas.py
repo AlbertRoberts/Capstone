@@ -57,6 +57,7 @@ class SimState(BaseModel):
     day_period: str = Field(..., example="morning")
     hour: int
     minute: int
+    speed: float = Field(1.0, example=1.0)
 
 
 class InteractionRequest(BaseModel):
@@ -72,3 +73,17 @@ class InteractionResponse(BaseModel):
     importance_a: float = Field(..., ge=0.0, le=1.0)
     importance_b: float = Field(..., ge=0.0, le=1.0)
     duration_ms: int = Field(..., ge=1000, le=20000)
+
+
+class SpeedRequest(BaseModel):
+    speed: float = Field(..., ge=0.0, le=16.0, example=2.0)
+
+
+class AskRequest(BaseModel):
+    question: str = Field(..., min_length=1, example="What do you think of the town?")
+
+
+class AskResponse(BaseModel):
+    agent_name: str
+    question: str
+    answer: str
