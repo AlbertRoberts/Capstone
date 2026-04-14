@@ -10,12 +10,14 @@ from Backend.app.db.models import Agent, Memory
 from Backend.app.agents.memory import add_memory, retrieve_memories
 from Backend.app.agents.planner import plan_next_action
 from Backend.app.agents.interaction import generate_interaction
+from Backend.app.agents.questioner import answer_question
 from Backend.app.sim_clock import sim_clock
 from Backend.app.schema.agent_schemas import (
     AgentCreate, AgentResponse, AgentUpdate,
     MemoryCreate, MemoryResponse,
     Action, DailyPlan, SimState,
-    InteractionRequest, InteractionResponse
+    InteractionRequest, InteractionResponse,
+    SpeedRequest, AskRequest, AskResponse,
 )
 
 Base.metadata.create_all(bind=engine)
@@ -36,10 +38,17 @@ def get_simulation_state():
 
 @router.post("/simulation/reset")
 def reset_simulation():
-    import time
-    sim_clock.start_real_time = time.time()
-    sim_clock.start_sim_minute = 8 * 60
+    sim_clock.reset()
     return {"message": "Simulation clock reset to 8:00am"}
+
+@router.get("/simulation/speed")
+def get_simulation_speed():
+    return {"speed": sim_clock.get_speed()}
+
+@router.post("/simulation/speed")
+def set_simulation_speed(req: SpeedRequest):
+    sim_clock.set_speed(req.speed)
+    return {"speed": sim_clock.get_speed()}
 
 
 @router.post("/agents/", response_model=AgentResponse)
@@ -143,6 +152,21 @@ def get_daily_plan(agent_id: int, db: Session = Depends(get_db)):
             )
         ]
     )
+
+
+@router.post("/agents/{agent_id}/ask", response_model=AskResponse)
+def ask_agent(agent_id: int, req: AskRequest, db: Session = Depends(get_db)):
+    agent = db.query(Agent).filter(Agent.id == agent_id).first()
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    try:
+        answer = answer_question(agent, req.question, db)
+    except Exception as e:
+        logging.warning(f"Question answering failed for agent {agent_id}: {e}")
+        answer = "I'm not sure how to answer that right now."
+
+    return AskResponse(agent_name=agent.name, question=req.question, answer=answer)
 
 
 @router.post("/interactions/", response_model=InteractionResponse)
