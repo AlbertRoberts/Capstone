@@ -18,6 +18,7 @@ from Backend.app.schema.agent_schemas import (
     Action, DailyPlan, SimState,
     InteractionRequest, InteractionResponse,
     SpeedRequest, AskRequest, AskResponse,
+    ConversationTurn,
 )
 
 Base.metadata.create_all(bind=engine)
@@ -181,30 +182,52 @@ def create_interaction(req: InteractionRequest, db: Session = Depends(get_db)):
         result = generate_interaction(agent_a, agent_b, req.location, req.time)
     except Exception as e:
         logging.warning(f"Interaction generation failed for {req.agent_a_id}/{req.agent_b_id}: {e}")
+        loc_nice = req.location.replace("_", " ")
         result = {
-            "happened": True,
-            "summary": f"{agent_a.name} and {agent_b.name} briefly chat at the {req.location.replace('_', ' ')}.",
+            "happened":     True,
+            "turns":        [
+                {"speaker": agent_a.name, "line": f"Hey {agent_b.name}, good to see you!"},
+                {"speaker": agent_b.name, "line": f"Likewise, {agent_a.name}!"},
+            ],
+            "summary":      f"{agent_a.name} and {agent_b.name} briefly chat at the {loc_nice}.",
             "importance_a": 0.3,
             "importance_b": 0.3,
-            "duration_ms": 4000,
+            "duration_ms":  4600,
         }
 
     if result["happened"]:
-        time_str = req.time or sim_clock.get_time_string()
+        time_str      = req.time or sim_clock.get_time_string()
         location_nice = req.location.replace("_", " ")
+
+        # Build a richer memory that includes a snippet of what was actually said
+        turns = result.get("turns", [])
+        dialogue_snippet = " | ".join(
+            f'{t["speaker"]}: "{t["line"]}"' for t in turns[:2]
+        )
+        memory_suffix = f" They said: {dialogue_snippet}" if dialogue_snippet else ""
 
         add_memory(
             db,
             agent_a.id,
-            f"At {time_str} I spoke with {agent_b.name} at the {location_nice}. {result['summary']}",
-            result["importance_a"]
+            f"At {time_str} I spoke with {agent_b.name} at the {location_nice}. "
+            f"{result['summary']}{memory_suffix}",
+            result["importance_a"],
         )
-
         add_memory(
             db,
             agent_b.id,
-            f"At {time_str} I spoke with {agent_a.name} at the {location_nice}. {result['summary']}",
-            result["importance_b"]
+            f"At {time_str} I spoke with {agent_a.name} at the {location_nice}. "
+            f"{result['summary']}{memory_suffix}",
+            result["importance_b"],
         )
 
-    return InteractionResponse(**result)
+    # Convert raw turn dicts to ConversationTurn objects
+    turns_out = [ConversationTurn(**t) for t in result.get("turns", [])]
+    return InteractionResponse(
+        happened=result["happened"],
+        summary=result["summary"],
+        importance_a=result["importance_a"],
+        importance_b=result["importance_b"],
+        duration_ms=result["duration_ms"],
+        turns=turns_out,
+    )

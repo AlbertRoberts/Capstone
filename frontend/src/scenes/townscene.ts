@@ -177,12 +177,18 @@ interface BackendPlan {
   actions:  BackendAction[];
 }
 
+interface ConversationTurn {
+  speaker: string;
+  line:    string;
+}
+
 interface BackendInteractionResponse {
   happened:     boolean;
   summary:      string;
   importance_a: number;
   importance_b: number;
   duration_ms:  number;
+  turns:        ConversationTurn[];
 }
 
 interface BackendAskResponse {
@@ -504,7 +510,7 @@ class Sidebar {
       <!-- Clock + speed controls -->
       <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
         <span style="color:#9ca3af; font-size:13px;">
-          🕐 <span id="sim-clock">8:00am</span>
+           <span id="sim-clock">8:00am</span>
         </span>
         <div id="speed-controls" style="display:flex; gap:4px; margin-left:auto;">
           <button data-speed="0"  id="spd-0" title="Pause">⏸</button>
@@ -521,6 +527,19 @@ class Sidebar {
       </div>
 
       <hr style="margin:16px 0; border-color:#374151;" />
+
+      <!-- Active conversation (hidden until a convo starts) -->
+      <div id="conversation-section" style="display:none;">
+        <h3 style="margin:0 0 8px;"> Conversation</h3>
+        <div id="conversation-box" style="
+          display:flex; flex-direction:column; gap:6px;
+          padding:8px; background:#0f172a;
+          border:1px solid #1e3a5f; border-radius:6px;
+          min-height:60px;
+        "></div>
+      </div>
+
+      <hr id="conversation-hr" style="margin:16px 0; border-color:#374151; display:none;" />
 
       <!-- Ask an agent -->
       <div id="ask-section">
@@ -683,6 +702,51 @@ class Sidebar {
       `;
       list.appendChild(row);
     }
+  }
+
+  // ── conversation panel ────────────────────────────────────
+
+  showConversationTurn(turn: ConversationTurn, isFirst: boolean) {
+    const section = this.el.querySelector<HTMLDivElement>("#conversation-section")!;
+    const hr      = this.el.querySelector<HTMLHRElement>("#conversation-hr")!;
+    const box     = this.el.querySelector<HTMLDivElement>("#conversation-box")!;
+
+    if (isFirst) {
+      box.innerHTML      = "";
+      section.style.display = "block";
+      hr.style.display   = "block";
+    }
+
+    const bubble = document.createElement("div");
+    Object.assign(bubble.style, {
+      padding:      "6px 10px",
+      borderRadius: "8px",
+      fontSize:     "13px",
+      lineHeight:   "1.4",
+      maxWidth:     "90%",
+      wordBreak:    "break-word",
+      animation:    "fadeInUp 0.3s ease",
+    });
+
+    // Alternate alignment: first speaker left, second speaker right
+    const isLeft = box.children.length % 2 === 0;
+    Object.assign(bubble.style, {
+      background:  isLeft ? "#1e3a5f" : "#1e3a2a",
+      border:      isLeft ? "1px solid #2563eb" : "1px solid #16a34a",
+      alignSelf:   isLeft ? "flex-start" : "flex-end",
+    });
+
+    bubble.innerHTML = `<strong style="font-size:11px; opacity:0.75;">${turn.speaker}</strong><br/>${turn.line}`;
+    box.appendChild(bubble);
+    // Scroll to bottom
+    box.scrollTop = box.scrollHeight;
+  }
+
+  clearConversation() {
+    const section = this.el.querySelector<HTMLDivElement>("#conversation-section")!;
+    const hr      = this.el.querySelector<HTMLHRElement>("#conversation-hr")!;
+    if (section) section.style.display = "none";
+    if (hr)      hr.style.display      = "none";
   }
 
   // ── event log ─────────────────────────────────────────────
@@ -1031,8 +1095,8 @@ export default class TownScene extends Phaser.Scene {
 
     a.interactingWith = b;
     b.interactingWith = a;
-    a.setStatus("interacting", "talking");
-    b.setStatus("interacting", "talking");
+    a.setStatus("interacting", "…");
+    b.setStatus("interacting", "…");
     a.lastAction = `Talking to ${b.displayName}`;
     b.lastAction = `Talking to ${a.displayName}`;
     a.lastInteractionAt = this.time.now;
@@ -1048,14 +1112,45 @@ export default class TownScene extends Phaser.Scene {
       );
 
       if (result.happened) {
-        this.log(`${a.displayName} and ${b.displayName}: ${result.summary}`);
-        await this.delay(result.duration_ms);
+        const turns = result.turns ?? [];
+        const msPerTurn = turns.length > 0
+          ? Math.floor(result.duration_ms / turns.length)
+          : result.duration_ms;
+
+        // Play turns one by one
+        for (let i = 0; i < turns.length; i++) {
+          const turn = turns[i];
+
+          // Show in sidebar conversation panel
+          this.sidebar?.showConversationTurn(turn, i === 0);
+
+          // Show the line as the speaking agent's status
+          const speaker = turn.speaker === a.displayName ? a : b;
+          const listener = speaker === a ? b : a;
+          const truncated = turn.line.length > 28
+            ? turn.line.slice(0, 26) + "…"
+            : turn.line;
+          speaker.setStatus("interacting", `"${truncated}"`);
+          listener.setStatus("interacting", "👂 …");
+          this.sidebar?.renderAgents(Array.from(this.agents.values()));
+
+          await this.delay(msPerTurn);
+        }
+
+        // Log summary after conversation ends
+        this.log(`${a.displayName} & ${b.displayName}: ${result.summary}`);
+
+        // Clear conversation panel after a brief pause
+        await this.delay(1_500);
+        this.sidebar?.clearConversation();
+
       } else {
         await this.delay(1_000);
       }
     } catch (err) {
       console.error("Interaction failed:", err);
-      this.log(`${a.displayName} and ${b.displayName} tried to interact, but the backend errored.`);
+      this.log(`${a.displayName} and ${b.displayName} tried to talk, but something went wrong.`);
+      this.sidebar?.clearConversation();
       await this.delay(2_000);
     }
 
