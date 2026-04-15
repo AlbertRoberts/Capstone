@@ -9,6 +9,7 @@ class AgentBase(BaseModel):
     location: Optional[str] = Field(None, example="park")
     current_action: Optional[str] = Field(None, example="Walking to the cafe")
     home_location: Optional[str] = Field(None, example="house_3")
+    role: Optional[str] = Field(None, example="Doctor")
 
 class AgentCreate(AgentBase):
     pass
@@ -18,6 +19,7 @@ class AgentUpdate(BaseModel):
     location: Optional[str] = None
     current_action: Optional[str] = None
     home_location: Optional[str] = None
+    role: Optional[str] = None
 
 class AgentResponse(AgentBase):
     id: int
