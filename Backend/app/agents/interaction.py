@@ -9,9 +9,11 @@ structured data (turns + summary) that the frontend can animate.
 import os
 import re
 import requests
+from sqlalchemy.orm import Session
 from dotenv import load_dotenv
 from Backend.app.db.models import Agent
 from Backend.app.agents.memory import retrieve_memories
+from Backend.app.agents.town_context import build_roster, get_workplace
 from Backend.app.sim_clock import sim_clock
 
 load_dotenv()
@@ -37,33 +39,45 @@ def _build_dialogue_prompt(
     agent_b: Agent,
     location: str,
     time_str: str,
+    all_agents: list[Agent],
 ) -> str:
     mem_a = _extract_memory_texts(
-        retrieve_memories(agent_a.id, f"social memories of {agent_a.name}", k=3)
+        retrieve_memories(agent_a.id, f"memories about {agent_b.name}", k=3)
     )
     mem_b = _extract_memory_texts(
-        retrieve_memories(agent_b.id, f"social memories of {agent_b.name}", k=3)
+        retrieve_memories(agent_b.id, f"memories about {agent_a.name}", k=3)
     )
 
-    mem_block_a = "\n".join(f"- {m}" for m in mem_a) if mem_a else "- No recent memories."
-    mem_block_b = "\n".join(f"- {m}" for m in mem_b) if mem_b else "- No recent memories."
+    mem_block_a = "\n".join(f"- {m}" for m in mem_a) if mem_a else "- No recent memories of this person."
+    mem_block_b = "\n".join(f"- {m}" for m in mem_b) if mem_b else "- No recent memories of this person."
 
     day_period    = sim_clock.get_day_period()
     location_nice = location.replace("_", " ")
     name_a        = agent_a.name
     name_b        = agent_b.name
+    role_a        = agent_a.role or "Resident"
+    role_b        = agent_b.role or "Resident"
+
+    # Town roster (gives context about who else might be mentioned)
+    town_size = len(all_agents)
+    roster    = build_roster(all_agents)
 
     return f"""<s>[INST]
-Write a short, natural conversation between two town residents who have just run into each other.
+Write a short, natural conversation between two people who live in the same small, isolated town.
 
-{name_a}:
-Personality: {agent_a.personality or "An average town resident."}
-Recent memories:
+IMPORTANT CONTEXT:
+This town has exactly {town_size} residents and no one else. The complete list of everyone who lives here:
+{roster}
+These two people know each other well. They should NOT mention anyone who is not on the list above.
+
+{name_a} (the {role_a}):
+  Personality: {agent_a.personality or "An average town resident."}
+  What they remember about {name_b}:
 {mem_block_a}
 
-{name_b}:
-Personality: {agent_b.personality or "An average town resident."}
-Recent memories:
+{name_b} (the {role_b}):
+  Personality: {agent_b.personality or "An average town resident."}
+  What they remember about {name_a}:
 {mem_block_b}
 
 Setting: {location_nice}, {time_str} ({day_period})
@@ -71,8 +85,9 @@ Setting: {location_nice}, {time_str} ({day_period})
 Rules:
 - Write exactly {CONVERSATION_TURNS} lines, alternating speakers starting with {name_a}.
 - Keep each line under 15 words.
-- Stay in character with each person's personality.
-- The conversation should feel natural for the time and place.
+- Stay in character with each person's role and personality.
+- The conversation should feel natural — talk about their work, the town, things they've done, or each other.
+- Only reference people who are on the residents list above.
 - Do NOT include stage directions, actions, or anything other than the dialogue lines.
 
 Use EXACTLY this format (name in ALL CAPS followed by colon):
@@ -180,12 +195,15 @@ def generate_interaction(
     agent_b: Agent,
     location: str,
     time_str: str | None = None,
+    all_agents: list[Agent] | None = None,
 ) -> dict:
     if not time_str:
         time_str = sim_clock.get_time_string()
+    if all_agents is None:
+        all_agents = [agent_a, agent_b]
 
     # ── 1. Generate dialogue ──────────────────────────────────
-    dialogue_prompt = _build_dialogue_prompt(agent_a, agent_b, location, time_str)
+    dialogue_prompt = _build_dialogue_prompt(agent_a, agent_b, location, time_str, all_agents)
     raw_dialogue    = _call_hf(dialogue_prompt, max_tokens=220)
     turns           = _parse_dialogue(raw_dialogue, agent_a.name, agent_b.name)
 
