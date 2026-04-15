@@ -67,12 +67,17 @@ class InteractionRequest(BaseModel):
     time: Optional[str] = None
 
 
+class ConversationTurn(BaseModel):
+    speaker: str   # agent name
+    line: str      # what they said
+
 class InteractionResponse(BaseModel):
     happened: bool
     summary: str
     importance_a: float = Field(..., ge=0.0, le=1.0)
     importance_b: float = Field(..., ge=0.0, le=1.0)
     duration_ms: int = Field(..., ge=1000, le=20000)
+    turns: list[ConversationTurn] = Field(default_factory=list)
 
 
 class SpeedRequest(BaseModel):
