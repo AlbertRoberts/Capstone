@@ -116,6 +116,20 @@ const SIDEWALK_SEGMENTS = [
   { x1: 1085, y1: 372, x2: 1212, y2: 372 },  // house_10
 ];
 
+/** New Colors for each Agent to visually separate */
+const AGENT_COLORS = [
+  0x4ade80, // green
+  0x60a5fa, // blue
+  0xf87171, // red
+  0xfbbf24, // amber
+  0xe879f9, // fuchsia
+  0x34d399, // emerald
+  0xfb923c, // orange
+  0xa78bfa, // violet
+  0x22d3ee, // cyan
+  0xf472b6, // pink
+];
+
 /** How long an agent dwells at a destination before requesting the next action */
 const DWELL_MS               = 5_000;
 const AGENT_SPEED            = 140; // px/s
