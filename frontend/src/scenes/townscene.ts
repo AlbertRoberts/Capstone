@@ -387,10 +387,7 @@ class SidewalkGraph {
       if (bl && !bl.includes(ka)) bl.push(ka);
     };
 
-    // KEY CHANGE: build edges by walking each segment in order, then linking
-    // only consecutive points along that segment.  This means a node can only
-    // reach neighbours that share its segment — it can never jump across grass
-    // to another road that happens to be collinear.
+
     const EPS = 6;
     for (const seg of SIDEWALK_SEGMENTS) {
       const isHorizontal = Math.abs(seg.y1 - seg.y2) <= EPS;
@@ -856,8 +853,6 @@ export default class TownScene extends Phaser.Scene {
     this.createLighting();
     this.updateLighting();
 
-    this.drawAnchors();
-    this.drawEntrances();
 
     // Tick the sim clock every real second
     this.time.addEvent({
@@ -1251,24 +1246,6 @@ export default class TownScene extends Phaser.Scene {
     this.sidebar = null;
   }
 
-  // ── debug helpers ─────────────────────────────────────────
-
-  private drawAnchors() {
-    for (const [id, pos] of Object.entries(LOCATIONS)) {
-      this.add.circle(pos.x, pos.y, 6, 0xffcc00).setDepth(1000).setAlpha(0.6);
-      this.add.text(pos.x + 8, pos.y - 10, id, { color: "#ffffff", fontSize: "12px" }).setDepth(1000);
-    }
-    for (const pos of SIDEWALK_POINTS) {
-      this.add.circle(pos.x, pos.y, 4, 0xffcc00).setDepth(1000).setAlpha(0.4);
-    }
-  }
-
-  private drawEntrances() {
-    for (const [id, pos] of Object.entries(ENTRANCES)) {
-      this.add.circle(pos.x, pos.y, 5, 0x00ffff).setDepth(1100).setAlpha(0.85);
-      this.add.text(pos.x + 8, pos.y + 8, `entry_${id}`, { color: "#00ffff", fontSize: "11px" }).setDepth(1100);
-    }
-  }
 
   // ── editor-generated scene setup (unchanged) ──────────────
 
