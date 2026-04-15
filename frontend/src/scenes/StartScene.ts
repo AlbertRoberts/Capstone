@@ -25,6 +25,7 @@ export type AgentConfig = {
   name: string;
   startingPoint: StartingLocation;
   personalityPrompt: string;
+  role: string; // e.g. "Doctor", "Bartender", "" for no fixed role
 };
 
 export default class StartScene extends Phaser.Scene {
@@ -78,7 +79,7 @@ export default class StartScene extends Phaser.Scene {
       </div>
 
       <p style="margin-top:0; color:#d1d5db;">
-        Enter each agent's name, starting location, and a short personality prompt.
+        Enter each agent's name, role (determines their workplace), starting home, and personality.
       </p>
 
       <div id="agent-list"></div>
@@ -119,7 +120,7 @@ export default class StartScene extends Phaser.Scene {
     const row = document.createElement("div");
     row.className = "agent-row";
     row.style.display = "grid";
-    row.style.gridTemplateColumns = "1.2fr 1fr 2fr auto";
+    row.style.gridTemplateColumns = "1fr 1fr 0.9fr 2fr auto";
     row.style.gap = "10px";
     row.style.marginBottom = "12px";
     row.style.padding = "12px";
@@ -127,18 +128,30 @@ export default class StartScene extends Phaser.Scene {
     row.style.borderRadius = "8px";
     row.style.border = "1px solid #374151";
 
+    const inputStyle = "padding:10px; border-radius:6px; border:1px solid #4b5563; background:#1f2937; color:white;";
+
     row.innerHTML = `
       <input
         type="text"
         class="agent-name"
         placeholder="Name"
-        style="padding:10px; border-radius:6px; border:1px solid #4b5563; background:#1f2937; color:white;"
+        style="${inputStyle}"
       />
 
-      <select
-        class="agent-start"
-        style="padding:10px; border-radius:6px; border:1px solid #4b5563; background:#1f2937; color:white;"
-      >
+      <select class="agent-role" style="${inputStyle}">
+        <option value="">Resident (no role)</option>
+        <option value="Doctor">Doctor — clinic</option>
+        <option value="Teacher">Teacher — school</option>
+        <option value="Student">Student — school</option>
+        <option value="Mayor">Mayor — town hall</option>
+        <option value="Sheriff">Sheriff — town hall</option>
+        <option value="Café Owner">Café Owner — café</option>
+        <option value="Bartender">Bartender — tavern</option>
+        <option value="Merchant">Merchant — market</option>
+        <option value="Farmer">Farmer — park</option>
+      </select>
+
+      <select class="agent-start" style="${inputStyle}">
         <option value="house_1">House 1</option>
         <option value="house_2">House 2</option>
         <option value="house_3">House 3</option>
@@ -155,14 +168,14 @@ export default class StartScene extends Phaser.Scene {
         class="agent-personality"
         rows="2"
         placeholder="Describe this agent's personality..."
-        style="padding:10px; border-radius:6px; border:1px solid #4b5563; background:#1f2937; color:white; resize:vertical;"
+        style="${inputStyle} resize:vertical;"
       ></textarea>
 
       <button
         class="remove-agent-btn"
         style="padding:10px 12px; border-radius:6px; cursor:pointer; background:#7f1d1d; color:white; border:none;"
       >
-        Remove
+        ✕
       </button>
     `;
 
@@ -176,14 +189,16 @@ export default class StartScene extends Phaser.Scene {
     const rows = Array.from(agentList.querySelectorAll(".agent-row"));
 
     return rows.map((row, index) => {
-      const nameInput = row.querySelector(".agent-name") as HTMLInputElement;
-      const startInput = row.querySelector(".agent-start") as HTMLSelectElement;
+      const nameInput        = row.querySelector(".agent-name")        as HTMLInputElement;
+      const roleInput        = row.querySelector(".agent-role")        as HTMLSelectElement;
+      const startInput       = row.querySelector(".agent-start")       as HTMLSelectElement;
       const personalityInput = row.querySelector(".agent-personality") as HTMLTextAreaElement;
 
       return {
-        id: `a${index + 1}`,
-        name: nameInput.value.trim() || `Agent ${index + 1}`,
-        startingPoint: startInput.value as StartingLocation,
+        id:               `a${index + 1}`,
+        name:             nameInput.value.trim() || `Agent ${index + 1}`,
+        role:             roleInput.value,
+        startingPoint:    startInput.value as StartingLocation,
         personalityPrompt:
           personalityInput.value.trim() || "Average town resident with no strong distinguishing traits.",
       };

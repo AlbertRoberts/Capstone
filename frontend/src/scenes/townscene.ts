@@ -220,6 +220,7 @@ class BackendClient {
     const res = await this.post("/agents/", {
       name:           cfg.name,
       personality:    cfg.personalityPrompt,
+      role:           cfg.role || null,
       location:       cfg.startingPoint,
       home_location:  cfg.startingPoint,
       current_action: "idle",
@@ -439,6 +440,7 @@ class Agent {
   // Logical state
   readonly backendId:  number;
   readonly color:      number;
+  readonly role:       string;
   status:              AgentStatus = "idle";
   currentLocation:     LocationId | null = null;
   destination:         LocationId | null = null;
@@ -461,9 +463,11 @@ class Agent {
     y:         number,
     backendId: number,
     color:     number,
+    role:      string = "",
   ) {
     this.backendId  = backendId;
     this.color      = color;
+    this.role       = role;
     this.body       = scene.add.circle(x, y, 10, color).setDepth(900);
     this.label      = scene.add.text(x + 12, y - 10, name, { color: "#ffffff", fontSize: "14px" }).setDepth(900);
     this.statusText = scene.add.text(x + 12, y + 6,  "idle", { color: "#9ca3af", fontSize: "11px" }).setDepth(900);
@@ -708,12 +712,15 @@ class Sidebar {
         borderRadius: "6px",
         border:       "1px solid #374151",
       });
-      const hex = "#" + agent.color.toString(16).padStart(6, "0");
+      const hex      = "#" + agent.color.toString(16).padStart(6, "0");
+      const roleTag  = agent.role
+        ? `<span style="font-size:11px; color:#60a5fa; margin-left:6px;">${agent.role}</span>`
+        : "";
       row.innerHTML = `
         <strong>
-          <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:${hex}; margin-right:6px; vertical-align:middle;"></span>${agent.displayName}
+          <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:${hex}; margin-right:6px; vertical-align:middle;"></span>${agent.displayName}${roleTag}
         </strong><br/>
-        Destination: ${agent.destination ?? "None"}<br/>
+        <span style="color:#9ca3af; font-size:12px;">@ ${agent.destination ?? agent.currentLocation ?? "?"}</span><br/>
         Status: ${agent.status}<br/>
         Action: ${agent.lastAction}
       `;
@@ -880,7 +887,7 @@ export default class TownScene extends Phaser.Scene {
       const color = AGENT_COLORS[this.configuredAgents.indexOf(cfg) % AGENT_COLORS.length];
       try {
         const backendId = await this.client!.registerAgent(cfg);
-        const agent     = new Agent(this, cfg.name, loc.x, loc.y, backendId, color);
+        const agent     = new Agent(this, cfg.name, loc.x, loc.y, backendId, color, cfg.role);
         agent.currentLocation = cfg.startingPoint; // so first move exits via the correct entrance
         this.agents.set(cfg.id, agent);
 

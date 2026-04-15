@@ -23,6 +23,16 @@ from Backend.app.schema.agent_schemas import (
 
 Base.metadata.create_all(bind=engine)
 
+# Auto-migrate: add 'role' column if it doesn't exist yet (SQLite-safe)
+from sqlalchemy import text, inspect as _inspect
+_inspector = _inspect(engine)
+if "agents" in _inspector.get_table_names():
+    _existing_cols = {c["name"] for c in _inspector.get_columns("agents")}
+    if "role" not in _existing_cols:
+        with engine.connect() as _conn:
+            _conn.execute(text("ALTER TABLE agents ADD COLUMN role VARCHAR"))
+            _conn.commit()
+
 router = APIRouter()
 
 def get_db():
@@ -60,6 +70,7 @@ def create_agent(agent: AgentCreate, db: Session = Depends(get_db)):
         location=agent.location,
         current_action=agent.current_action,
         home_location=agent.home_location,
+        role=agent.role or None,
     )
     db.add(db_agent)
     db.commit()
@@ -126,18 +137,26 @@ def get_daily_plan(agent_id: int, db: Session = Depends(get_db)):
         result = plan_next_action(agent, db)
     except Exception as e:
         logging.warning(f"Planner failed for agent {agent_id}: {e}")
-        fallback_locations = [
-            "town_hall", "school", "clinic", "cafe", "tavern", "market", "park"
-        ]
-        if agent.home_location:
-            fallback_locations.append(agent.home_location)
-
-        pick = random.choice(fallback_locations)
-        action_text = (
-            f"Go home to {pick.replace('_', ' ')}"
-            if pick.startswith("house_")
-            else f"Walk to the {pick.replace('_', ' ')}"
+        from Backend.app.agents.town_context import (
+            get_workplace, WORK_PERIODS, STUDENT_WORK_PERIODS
         )
+        day_period = sim_clock.get_day_period()
+        workplace  = get_workplace(agent.role)
+        work_set   = STUDENT_WORK_PERIODS if agent.role == "Student" else WORK_PERIODS
+
+        # During work hours, default to the agent's workplace; otherwise home or park
+        if workplace and day_period in work_set:
+            pick = workplace
+            action_text = (
+                f"{agent.name} heads to the {pick.replace('_', ' ')} for "
+                f"{'class' if agent.role == 'Student' else 'work'}."
+            )
+        elif day_period in ("evening", "night", "late night") and agent.home_location:
+            pick = agent.home_location
+            action_text = f"{agent.name} heads home for the evening."
+        else:
+            pick = random.choice(["cafe", "market", "park"])
+            action_text = f"{agent.name} wanders to the {pick.replace('_', ' ')}."
 
         result = {
             "action": action_text,
@@ -178,8 +197,10 @@ def create_interaction(req: InteractionRequest, db: Session = Depends(get_db)):
     if not agent_a or not agent_b:
         raise HTTPException(status_code=404, detail="One or both agents not found")
 
+    all_agents = db.query(Agent).all()
+
     try:
-        result = generate_interaction(agent_a, agent_b, req.location, req.time)
+        result = generate_interaction(agent_a, agent_b, req.location, req.time, all_agents)
     except Exception as e:
         logging.warning(f"Interaction generation failed for {req.agent_a_id}/{req.agent_b_id}: {e}")
         loc_nice = req.location.replace("_", " ")
