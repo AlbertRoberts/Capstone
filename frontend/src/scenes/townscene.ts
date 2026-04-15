@@ -879,9 +879,10 @@ export default class TownScene extends Phaser.Scene {
     // Register and spawn each configured agent
     for (const cfg of this.configuredAgents) {
       const loc = LOCATIONS[cfg.startingPoint];
+      const color = AGENT_COLORS[this.configuredAgents.indexOf(cfg) % AGENT_COLORS.length];
       try {
         const backendId = await this.client!.registerAgent(cfg);
-        const agent     = new Agent(this, cfg.name, loc.x, loc.y, backendId);
+        const agent     = new Agent(this, cfg.name, loc.x, loc.y, backendId, color);
         agent.currentLocation = cfg.startingPoint; // so first move exits via the correct entrance
         this.agents.set(cfg.id, agent);
 
