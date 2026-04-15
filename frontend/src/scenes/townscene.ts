@@ -711,8 +711,11 @@ class Sidebar {
         borderRadius: "6px",
         border:       "1px solid #374151",
       });
+      const hex = "#" + agent.color.toString(16).padStart(6, "0");
       row.innerHTML = `
-        <strong>${agent.displayName}</strong><br/>
+        <strong>
+          <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:${hex}; margin-right:6px; vertical-align:middle;"></span>${agent.displayName}
+        </strong><br/>
         Destination: ${agent.destination ?? "None"}<br/>
         Status: ${agent.status}<br/>
         Action: ${agent.lastAction}
