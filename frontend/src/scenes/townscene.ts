@@ -441,6 +441,7 @@ class Agent {
 
   // Logical state
   readonly backendId:  number;
+  readonly color:      number;
   status:              AgentStatus = "idle";
   currentLocation:     LocationId | null = null;
   destination:         LocationId | null = null;
