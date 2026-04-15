@@ -463,9 +463,11 @@ class Agent {
     x:         number,
     y:         number,
     backendId: number,
+    color:     number,
   ) {
     this.backendId  = backendId;
-    this.body       = scene.add.circle(x, y, 10, 0x4ade80).setDepth(900);
+    this.color      = color;
+    this.body       = scene.add.circle(x, y, 10, color).setDepth(900);
     this.label      = scene.add.text(x + 12, y - 10, name, { color: "#ffffff", fontSize: "14px" }).setDepth(900);
     this.statusText = scene.add.text(x + 12, y + 6,  "idle", { color: "#9ca3af", fontSize: "11px" }).setDepth(900);
   }
