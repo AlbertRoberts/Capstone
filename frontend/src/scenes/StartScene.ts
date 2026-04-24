@@ -112,6 +112,48 @@ export default class StartScene extends Phaser.Scene {
 
     addAgentBtn.onclick = () => this.addAgentRow(agentList);
 
+    // ── Import ──────────────────────────────────────────────────────────────
+    importBtn.onclick = () => fileInput.click();
+
+    fileInput.onchange = () => {
+      const file = fileInput.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target?.result as string;
+        try {
+          const configs = file.name.endsWith(".csv")
+            ? this.parseCSV(text)
+            : this.parseJSON(text);
+
+          agentList.innerHTML = "";           // clear existing rows
+          for (const cfg of configs) this.addAgentRow(agentList, cfg);
+        } catch (err) {
+          alert(`Failed to import file: ${err instanceof Error ? err.message : err}`);
+        }
+        fileInput.value = "";               // reset so the same file can be re-imported
+      };
+      reader.readAsText(file);
+    };
+
+    // ── Export ──────────────────────────────────────────────────────────────
+    exportBtn.onclick = () => {
+      const agents = this.collectAgents(agentList);
+      const exportData = agents.map(a => ({
+        name:         a.name,
+        role:         a.role,
+        startingPoint: a.startingPoint,
+        personality:  a.personalityPrompt,
+      }));
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      a.href     = url;
+      a.download = "agents.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    };
 
     startSimBtn.onclick = () => {
       const agents = this.collectAgents(agentList);
