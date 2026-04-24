@@ -37,7 +37,7 @@ export default class TownScene extends Phaser.Scene {
   // ── sim-time tracking (speed-aware) ──────────────────────────────────────
 
   /** Accumulated sim-minutes up to the last speed change. */
-  private simAccuMinutes = 8 * 60;   // start at 8:00am
+  private simAccuMinutes = 9 * 60;   // start at 9:00am — matches backend, workplace enforcement active
   /** Real wall-clock ms at the last speed change. */
   private simLastRealMs  = Date.now();
   /** Current speed (sim-minutes per real second). */
@@ -121,7 +121,8 @@ export default class TownScene extends Phaser.Scene {
       // 1. Plan
       const plan        = await this.client!.fetchPlan(agent.backendId);
       const action      = plan.actions[0];
-      const description = action?.description ?? "";
+      // Strip any trailing LOCATION:xxx the LLM may have appended to the action sentence
+      const description = (action?.description ?? "").replace(/\s*LOCATION:\s*\S+/gi, "").trim();
       const locationId  = this.resolveLocation(action);
 
       agent.destination = locationId;

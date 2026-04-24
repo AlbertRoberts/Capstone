@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 @dataclass
 class SimClock:
     # Accumulated sim minutes up to the last speed change
-    _base_sim_minutes: float = 8 * 60   # 8:00am
+    _base_sim_minutes: float = 9 * 60   # 9:00am — first "morning" period, workplace enforcement active
     # Real timestamp of the last speed change
     _last_real_time: float = field(default_factory=time.time)
     # Sim minutes that advance per real second (0 = paused, 1 = default, 2 = 2x, 4 = 4x)
@@ -75,7 +75,7 @@ class SimClock:
         }
 
     def reset(self) -> None:
-        self._base_sim_minutes = 8 * 60
+        self._base_sim_minutes = 9 * 60
         self._last_real_time   = time.time()
         self._speed            = 1.0
 

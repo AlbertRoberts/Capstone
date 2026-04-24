@@ -89,12 +89,15 @@ CURRENT SITUATION:
 RECENT MEMORIES:
 {memory_block}
 
+CURRENT TIME PERIOD: {day_period}
+
 DECISION RULES (follow strictly):
 {"1. You MUST go to the " + workplace.replace("_", " ") + " during work/school hours (morning and afternoon). This is not optional." if workplace else "1. You have no fixed workplace — go wherever suits your mood and time of day."}
 2. Only leave your workplace for: lunch at the café (midday only), a genuine personal errand, or the evening/night.
-3. In the evening (after 5pm) go home or to the tavern.
-4. Late at night always go home.
-5. Only reference the people listed above — no one else exists in this town.
+3. It is currently {day_period}. Choose an action that makes sense for THIS time of day — do NOT plan morning activities if it is evening or night.
+4. In the evening (after 5pm) go home or to the tavern. Do NOT go to work or school in the evening.
+5. Late at night always go home to {home_text}.
+6. Only reference the people listed above — no one else exists in this town.
 
 Valid locations: {location_list}
 
@@ -133,7 +136,10 @@ def _parse_response(text: str, valid_locations: list[str]) -> dict[str, str]:
     for line in text.splitlines():
         line = line.strip()
         if line.upper().startswith("ACTION:"):
-            action = line[7:].strip()
+            raw_action = line[7:].strip()
+            # Strip any trailing LOCATION:xxx the LLM appended to the action sentence
+            raw_action = re.sub(r'\s*LOCATION:\s*\S+', '', raw_action, flags=re.IGNORECASE).strip()
+            action = raw_action
         elif line.upper().startswith("LOCATION:"):
             raw = line[9:].strip().lower().replace("the ", "").replace(" ", "_")
             if raw in valid_locations:

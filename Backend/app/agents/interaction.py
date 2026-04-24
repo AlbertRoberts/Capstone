@@ -86,7 +86,8 @@ Rules:
 - Write exactly {CONVERSATION_TURNS} lines, alternating speakers starting with {name_a}.
 - Keep each line under 15 words.
 - Stay in character with each person's role and personality.
-- The conversation should feel natural — talk about their work, the town, things they've done, or each other.
+- The conversation should feel natural — talk about the town, shared experiences, or things relevant to BOTH people.
+- Do NOT ask questions about topics the other person wouldn't know about (e.g. a {role_a} should not ask a {role_b} about {role_a}-specific work matters).
 - Only reference people who are on the residents list above.
 - Do NOT include stage directions, actions, or anything other than the dialogue lines.
 
