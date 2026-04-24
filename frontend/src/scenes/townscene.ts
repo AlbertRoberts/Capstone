@@ -123,13 +123,23 @@ export default class TownScene extends Phaser.Scene {
 
       agent.destination = locationId;
       agent.lastAction  = description || "Moving";
-      agent.setStatus("walking",
-        description.length > 24 ? description.slice(0, 22) + "…" : description);
       this.sidebar?.renderAgents(Array.from(this.agents.values()));
-      this.log(`${agent.displayName}: "${description}" → ${locationId}`);
 
-      // 2. Walk
-      await this.walkAgentTo(frontendId, locationId);
+      const alreadyHere = agent.currentLocation === locationId;
+
+      if (alreadyHere) {
+        // Already at the destination — stay and continue the activity without leaving
+        const truncated = description.length > 24 ? description.slice(0, 22) + "…" : description;
+        agent.setStatus("idle", truncated);
+        this.log(`${agent.displayName} continues at ${locationId.replace(/_/g, " ")}: "${description}"`);
+      } else {
+        // 2. Walk to destination
+        agent.setStatus("walking",
+          description.length > 24 ? description.slice(0, 22) + "…" : description);
+        this.sidebar?.renderAgents(Array.from(this.agents.values()));
+        this.log(`${agent.displayName}: "${description}" → ${locationId}`);
+        await this.walkAgentTo(frontendId, locationId);
+      }
 
       // 3. Dwell
       await this.delay(DWELL_MS);
@@ -138,12 +148,14 @@ export default class TownScene extends Phaser.Scene {
       await this.client!.reportArrival(agent.backendId, locationId, description);
       const simTime = this.getSimTime();
       const locName = locationId.replace(/_/g, " ");
-      await this.client!.writeMemory(
-        agent.backendId,
-        `At ${simTime} I went to the ${locName}. ${description}`,
-        0.3,
-      );
-      this.log(`${agent.displayName} visited the ${locName} at ${simTime}.`);
+      if (!alreadyHere) {
+        await this.client!.writeMemory(
+          agent.backendId,
+          `At ${simTime} I went to the ${locName}. ${description}`,
+          0.3,
+        );
+      }
+      this.log(`${agent.displayName} at the ${locName} at ${simTime}.`);
 
       agent.setStatus("idle");
       agent.lastAction = "idle";
