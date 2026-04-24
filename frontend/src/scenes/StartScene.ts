@@ -75,11 +75,20 @@ export default class StartScene extends Phaser.Scene {
     container.innerHTML = `
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
         <h2 style="margin:0;">Create Agents</h2>
-        <button id="add-agent-btn" style="padding:8px 14px; cursor:pointer;">+ Add Agent</button>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <button id="import-btn"    style="padding:8px 14px; cursor:pointer; background:#1f2937; color:#d1d5db; border:1px solid #4b5563; border-radius:6px;">Import</button>
+          <button id="export-btn"    style="padding:8px 14px; cursor:pointer; background:#1f2937; color:#d1d5db; border:1px solid #4b5563; border-radius:6px;">Export</button>
+          <button id="add-agent-btn" style="padding:8px 14px; cursor:pointer;">+ Add Agent</button>
+        </div>
       </div>
 
-      <p style="margin-top:0; color:#d1d5db;">
-        Enter each agent's name, role (determines their workplace), starting home, and personality.
+      <!-- hidden file picker — accepts JSON and CSV -->
+      <input id="file-input" type="file" accept=".json,.csv" style="display:none;" />
+
+      <p style="margin-top:0; color:#9ca3af; font-size:13px;">
+        Import a <strong>.json</strong> or <strong>.csv</strong> file, or fill in the rows below.
+        JSON: array of <code>{name, role, startingPoint, personality}</code>.
+        CSV: columns <code>name, role, startingPoint, personality</code>.
       </p>
 
       <div id="agent-list"></div>
@@ -96,9 +105,13 @@ export default class StartScene extends Phaser.Scene {
 
     const addAgentBtn = container.querySelector("#add-agent-btn") as HTMLButtonElement;
     const startSimBtn = container.querySelector("#start-sim-btn") as HTMLButtonElement;
-    const agentList = container.querySelector("#agent-list") as HTMLDivElement;
+    const importBtn   = container.querySelector("#import-btn")    as HTMLButtonElement;
+    const exportBtn   = container.querySelector("#export-btn")    as HTMLButtonElement;
+    const fileInput   = container.querySelector("#file-input")    as HTMLInputElement;
+    const agentList   = container.querySelector("#agent-list")    as HTMLDivElement;
 
     addAgentBtn.onclick = () => this.addAgentRow(agentList);
+
 
     startSimBtn.onclick = () => {
       const agents = this.collectAgents(agentList);
@@ -116,7 +129,45 @@ export default class StartScene extends Phaser.Scene {
     this.addAgentRow(agentList);
   }
 
-  private addAgentRow(agentList: HTMLDivElement) {
+  // ── Import parsers ──────────────────────────────────────────────────────────
+
+  private parseJSON(text: string): Partial<AgentConfig>[] {
+    const data = JSON.parse(text);
+    if (!Array.isArray(data)) throw new Error("JSON must be an array of agent objects.");
+    return data.map((d: Record<string, string>) => ({
+      name:             d.name         ?? "",
+      role:             d.role         ?? "",
+      startingPoint:    (d.startingPoint ?? "house_1") as StartingLocation,
+      personalityPrompt: d.personality  ?? "",
+    }));
+  }
+
+  private parseCSV(text: string): Partial<AgentConfig>[] {
+    const lines  = text.trim().split(/\r?\n/);
+    if (lines.length < 2) throw new Error("CSV must have a header row and at least one data row.");
+
+    // Normalise header names (lowercase, strip spaces)
+    const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
+    const col = (row: string[], name: string) => {
+      const i = headers.indexOf(name);
+      return i >= 0 ? (row[i] ?? "").trim() : "";
+    };
+
+    return lines.slice(1).filter(l => l.trim()).map(line => {
+      // Handle quoted fields with commas inside them
+      const cols = line.match(/(".*?"|[^,]+|(?<=,)(?=,)|(?<=,)$|^(?=,))/g)
+        ?.map(c => c.replace(/^"|"$/g, "").trim()) ?? line.split(",").map(c => c.trim());
+
+      return {
+        name:              col(cols, "name"),
+        role:              col(cols, "role"),
+        startingPoint:     (col(cols, "startingpoint") || "house_1") as StartingLocation,
+        personalityPrompt: col(cols, "personality"),
+      };
+    });
+  }
+
+  private addAgentRow(agentList: HTMLDivElement, prefill?: Partial<AgentConfig>) {
     const row = document.createElement("div");
     row.className = "agent-row";
     row.style.display = "grid";
@@ -181,6 +232,14 @@ export default class StartScene extends Phaser.Scene {
 
     const removeBtn = row.querySelector(".remove-agent-btn") as HTMLButtonElement;
     removeBtn.onclick = () => row.remove();
+
+    // Pre-fill values if provided (from import)
+    if (prefill) {
+      (row.querySelector(".agent-name")        as HTMLInputElement   ).value = prefill.name             ?? "";
+      (row.querySelector(".agent-role")        as HTMLSelectElement  ).value = prefill.role             ?? "";
+      (row.querySelector(".agent-start")       as HTMLSelectElement  ).value = prefill.startingPoint    ?? "house_1";
+      (row.querySelector(".agent-personality") as HTMLTextAreaElement).value = prefill.personalityPrompt ?? "";
+    }
 
     agentList.appendChild(row);
   }
