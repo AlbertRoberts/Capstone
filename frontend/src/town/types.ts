@@ -166,11 +166,11 @@ export const AGENT_COLORS = [
   0xf472b6, // pink
 ];
 
-export const DWELL_MS              = 5_000;
+export const DWELL_MS              = 15_000;
 export const AGENT_SPEED           = 140;    // px/s
 export const INTERACTION_DISTANCE  = 40;     // px
 export const INTERACTION_COOLDOWN  = 15_000; // ms
-export const AGENT_LOOP_RESTART_MS = 500;
+export const AGENT_LOOP_RESTART_MS = 3_000;
 export const AGENT_LOOP_STAGGER_MS = 1_500;
 export const MAX_EVENT_LOG_ENTRIES = 30;
 export const API_BASE              = "http://localhost:8000";

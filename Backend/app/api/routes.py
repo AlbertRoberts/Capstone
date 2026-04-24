@@ -48,9 +48,30 @@ def get_simulation_state():
     return SimState(**sim_clock.get_state())
 
 @router.post("/simulation/reset")
-def reset_simulation():
+def reset_simulation(db: Session = Depends(get_db)):
     sim_clock.reset()
-    return {"message": "Simulation clock reset to 8:00am"}
+
+    # Wipe all agents and memories from SQLite
+    db.query(Memory).delete()
+    db.query(Agent).delete()
+    db.commit()
+
+    # Wipe ChromaDB — delete and recreate the collection
+    from Backend.app.embedding.chroma_client import client, embedding_function, memory_collection as _col
+    import Backend.app.embedding.chroma_client as chroma_module
+    import Backend.app.agents.memory as memory_module
+    try:
+        client.delete_collection("agent_memories")
+    except Exception:
+        pass
+    new_col = client.create_collection(
+        name="agent_memories",
+        embedding_function=embedding_function,
+    )
+    chroma_module.memory_collection = new_col
+    memory_module.memory_collection = new_col
+
+    return {"message": "Simulation reset: clock, agents, and memories cleared"}
 
 @router.get("/simulation/speed")
 def get_simulation_speed():

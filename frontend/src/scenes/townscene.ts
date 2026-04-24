@@ -52,6 +52,9 @@ export default class TownScene extends Phaser.Scene {
     this.client = new BackendClient(API_BASE);
     this.sidebar = new Sidebar();
 
+    // Clear all agents and memories from any previous run before registering new ones
+    await this.client.resetSimulation();
+
     // Wire sidebar callbacks
     this.sidebar.onSpeedChange = speed => this.setSimSpeed(speed);
     this.sidebar.onAskAgent    = async (agentId, question) => {

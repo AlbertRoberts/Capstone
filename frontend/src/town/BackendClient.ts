@@ -90,6 +90,10 @@ export class BackendClient {
     return res.json();
   }
 
+  async resetSimulation(): Promise<void> {
+    await this.post("/simulation/reset", {});
+  }
+
   async setSpeed(speed: number): Promise<void> {
     await this.post("/simulation/speed", { speed });
   }
