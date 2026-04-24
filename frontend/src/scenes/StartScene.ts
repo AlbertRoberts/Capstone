@@ -110,7 +110,14 @@ export default class StartScene extends Phaser.Scene {
     const fileInput   = container.querySelector("#file-input")    as HTMLInputElement;
     const agentList   = container.querySelector("#agent-list")    as HTMLDivElement;
 
-    addAgentBtn.onclick = () => this.addAgentRow(agentList);
+    const syncAddBtn = () => {
+      const count = agentList.querySelectorAll(".agent-row").length;
+      addAgentBtn.disabled = count >= 10;
+      addAgentBtn.style.opacity = count >= 10 ? "0.4" : "1";
+      addAgentBtn.title = count >= 10 ? "Maximum 10 agents" : "";
+    };
+
+    addAgentBtn.onclick = () => { this.addAgentRow(agentList, undefined, syncAddBtn); syncAddBtn(); };
 
     // ── Import ──────────────────────────────────────────────────────────────
     importBtn.onclick = () => fileInput.click();
@@ -128,7 +135,10 @@ export default class StartScene extends Phaser.Scene {
             : this.parseJSON(text);
 
           agentList.innerHTML = "";           // clear existing rows
-          for (const cfg of configs) this.addAgentRow(agentList, cfg);
+          const capped = configs.slice(0, 10);
+          if (configs.length > 10) alert(`Only the first 10 agents were imported (file had ${configs.length}).`);
+          for (const cfg of capped) this.addAgentRow(agentList, cfg, syncAddBtn);
+          syncAddBtn();
         } catch (err) {
           alert(`Failed to import file: ${err instanceof Error ? err.message : err}`);
         }
@@ -166,9 +176,10 @@ export default class StartScene extends Phaser.Scene {
       this.scene.start("townscene", { agents });
     };
 
-    this.addAgentRow(agentList);
-    this.addAgentRow(agentList);
-    this.addAgentRow(agentList);
+    this.addAgentRow(agentList, undefined, syncAddBtn);
+    this.addAgentRow(agentList, undefined, syncAddBtn);
+    this.addAgentRow(agentList, undefined, syncAddBtn);
+    syncAddBtn();
   }
 
   // ── Import parsers ──────────────────────────────────────────────────────────
@@ -209,7 +220,7 @@ export default class StartScene extends Phaser.Scene {
     });
   }
 
-  private addAgentRow(agentList: HTMLDivElement, prefill?: Partial<AgentConfig>) {
+  private addAgentRow(agentList: HTMLDivElement, prefill?: Partial<AgentConfig>, onRemove?: () => void) {
     const row = document.createElement("div");
     row.className = "agent-row";
     row.style.display = "grid";
@@ -273,7 +284,7 @@ export default class StartScene extends Phaser.Scene {
     `;
 
     const removeBtn = row.querySelector(".remove-agent-btn") as HTMLButtonElement;
-    removeBtn.onclick = () => row.remove();
+    removeBtn.onclick = () => { row.remove(); onRemove?.(); };
 
     // Pre-fill values if provided (from import)
     if (prefill) {

@@ -3,7 +3,9 @@ from Backend.app.embedding.chroma_client import memory_collection
 from Backend.app.db.database import SessionLocal
 from Backend.app.db.models import Memory
 
-def add_memory(db: Session,agent_id: int, content: str, importance: float):
+MAX_MEMORIES_PER_AGENT = 20
+
+def add_memory(db: Session, agent_id: int, content: str, importance: float):
     memory = Memory(
         agent_id=agent_id,
         content=content,
@@ -18,6 +20,24 @@ def add_memory(db: Session,agent_id: int, content: str, importance: float):
         metadatas=[{"agent_id": agent_id}],
         ids=[str(memory.id)]
     )
+
+    # Prune oldest memories beyond the cap
+    all_memories = (
+        db.query(Memory)
+        .filter(Memory.agent_id == agent_id)
+        .order_by(Memory.created_at.asc())
+        .all()
+    )
+    if len(all_memories) > MAX_MEMORIES_PER_AGENT:
+        to_delete = all_memories[:len(all_memories) - MAX_MEMORIES_PER_AGENT]
+        stale_ids = [str(m.id) for m in to_delete]
+        try:
+            memory_collection.delete(ids=stale_ids)
+        except Exception:
+            pass
+        for m in to_delete:
+            db.delete(m)
+        db.commit()
 
     return memory
     
