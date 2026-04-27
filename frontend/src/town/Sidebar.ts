@@ -54,7 +54,7 @@ export class Sidebar {
       <!-- Clock + speed controls -->
       <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
         <span style="color:#9ca3af; font-size:13px;">
-          🕐 <span id="sim-clock">8:00am</span>
+           <span id="sim-clock">8:00am</span>
         </span>
         <div id="speed-controls" style="display:flex; gap:4px; margin-left:auto;">
           <button data-speed="0" title="Pause">⏸</button>
@@ -74,7 +74,7 @@ export class Sidebar {
 
       <!-- Active conversation (hidden until a conversation starts) -->
       <div id="conversation-section" style="display:none;">
-        <h3 style="margin:0 0 8px;">💬 Conversation</h3>
+        <h3 style="margin:0 0 8px;"> Conversation</h3>
         <div id="conversation-box" style="
           display:flex; flex-direction:column; gap:6px;
           padding:8px; background:#0f172a;

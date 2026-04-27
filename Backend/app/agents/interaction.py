@@ -42,14 +42,14 @@ def _build_dialogue_prompt(
     all_agents: list[Agent],
 ) -> str:
     mem_a = _extract_memory_texts(
-        retrieve_memories(agent_a.id, f"memories about {agent_b.name}", k=3)
+        retrieve_memories(agent_a.id, f"{agent_b.name} town event conflict", k=4)
     )
     mem_b = _extract_memory_texts(
-        retrieve_memories(agent_b.id, f"memories about {agent_a.name}", k=3)
+        retrieve_memories(agent_b.id, f"{agent_a.name} town event conflict", k=4)
     )
 
-    mem_block_a = "\n".join(f"- {m}" for m in mem_a) if mem_a else "- No recent memories of this person."
-    mem_block_b = "\n".join(f"- {m}" for m in mem_b) if mem_b else "- No recent memories of this person."
+    mem_block_a = "\n".join(f"- {m}" for m in mem_a) if mem_a else "- No prior history with this person."
+    mem_block_b = "\n".join(f"- {m}" for m in mem_b) if mem_b else "- No prior history with this person."
 
     day_period    = sim_clock.get_day_period()
     location_nice = location.replace("_", " ")
@@ -58,44 +58,44 @@ def _build_dialogue_prompt(
     role_a        = agent_a.role or "Resident"
     role_b        = agent_b.role or "Resident"
 
-    # Town roster (gives context about who else might be mentioned)
     town_size = len(all_agents)
     roster    = build_roster(all_agents)
 
     return f"""<s>[INST]
-Write a short, natural conversation between two people who live in the same small, isolated town.
+You are writing a scene from a drama set in a small isolated town with {town_size} residents.
+Two characters have just crossed paths at the {location_nice}. Write their conversation.
 
-IMPORTANT CONTEXT:
-This town has exactly {town_size} residents and no one else. The complete list of everyone who lives here:
+TOWN RESIDENTS (the only people who exist):
 {roster}
-These two people know each other well. They should NOT mention anyone who is not on the list above.
 
-{name_a} (the {role_a}):
-  Personality: {agent_a.personality or "An average town resident."}
-  What they remember about {name_b}:
+--- {name_a.upper()} ---
+Role: {role_a}
+Personality: {agent_a.personality or "An average town resident."}
+What {name_a} remembers:
 {mem_block_a}
 
-{name_b} (the {role_b}):
-  Personality: {agent_b.personality or "An average town resident."}
-  What they remember about {name_a}:
+--- {name_b.upper()} ---
+Role: {role_b}
+Personality: {agent_b.personality or "An average town resident."}
+What {name_b} remembers:
 {mem_block_b}
 
-Setting: {location_nice}, {time_str} ({day_period})
+Time: {time_str} ({day_period})
 
-Rules:
-- Write exactly {CONVERSATION_TURNS} lines, alternating speakers starting with {name_a}.
-- Keep each line under 15 words.
-- Stay in character with each person's role and personality.
-- The conversation should feel natural — talk about the town, shared experiences, or things relevant to BOTH people.
-- Do NOT ask questions about topics the other person wouldn't know about (e.g. a {role_a} should not ask a {role_b} about {role_a}-specific work matters).
-- Only reference people who are on the residents list above.
-- Do NOT include stage directions, actions, or anything other than the dialogue lines.
+WRITING INSTRUCTIONS:
+- Each character should speak in a voice that matches their personality — word choice, attitude, rhythm.
+- Let subtext do the work. Characters can be evasive, pointed, sarcastic, or guarded.
+- If their history or personalities create tension, let it show — don't flatten it into pleasantries.
+- Lines can be short or long, whatever fits the character. No word limit.
+- Only reference residents from the list above. No invented people.
+- No stage directions, no narration — only spoken dialogue.
 
-Use EXACTLY this format (name in ALL CAPS followed by colon):
-{name_a.upper()}: <what {name_a} says>
-{name_b.upper()}: <what {name_b} says>
-{name_a.upper()}: <what {name_a} says>
-{name_b.upper()}: <what {name_b} says>
+Write exactly {CONVERSATION_TURNS} lines starting with {name_a}, alternating speakers.
+Use EXACTLY this format:
+{name_a.upper()}: <line>
+{name_b.upper()}: <line>
+{name_a.upper()}: <line>
+{name_b.upper()}: <line>
 [/INST]"""
 
 
@@ -128,7 +128,7 @@ def _call_hf(prompt: str, max_tokens: int = 200) -> str:
             "model":       HF_MODEL,
             "messages":    [{"role": "user", "content": prompt}],
             "max_tokens":  max_tokens,
-            "temperature": 0.8,
+            "temperature": 0.92,
         },
         timeout=30,
     )
